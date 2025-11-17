@@ -12,6 +12,7 @@ export interface Task {
   changed_at: string;
   active_tasks_count?: number;
   status_pill_color?: string;
+  position?: number;
 }
 
 export interface TaskResponse {

@@ -71,6 +71,8 @@ export function MMQ({
   const [overrideAccount, setOverrideAccount] = useState<number | null>(null);
   const [overrideInput, setOverrideInput] = useState<string>('');
   const [isOverrideInputVisible, setIsOverrideInputVisible] = useState(false);
+  const [hasPendingReorder, setHasPendingReorder] = useState(false);
+  const [originalTasks, setOriginalTasks] = useState<Task[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -105,6 +107,8 @@ export function MMQ({
           activeTasks: result.data.active_tasks
         });
         setData(result.data);
+        setOriginalTasks(result.data.tasks);
+        setHasPendingReorder(false);
         setError(null);
         onDataLoaded?.(result.data);
       } else {
@@ -155,14 +159,16 @@ export function MMQ({
   }, [data]);
 
   const holdTasks = useMemo(() => {
-    return data?.tasks.filter((task) => !task.active) || [];
+    const filtered = data?.tasks.filter((task) => !task.active) || [];
+    // Sort by position to maintain consistent order
+    return filtered.sort((a, b) => (a.position ?? 999999) - (b.position ?? 999999));
   }, [data]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
 
@@ -187,7 +193,7 @@ export function MMQ({
 
     const reorderedTasks = arrayMove(holdTasks, oldIndex, newIndex);
 
-    // Update local state optimistically
+    // Update local state with new positions
     const updatedTasks = reorderedTasks.map((task, index) => ({
       ...task,
       position: index + 1,
@@ -203,16 +209,22 @@ export function MMQ({
         ],
       };
       setData(updatedData);
+      setHasPendingReorder(true);
     }
+  };
 
-    // Send reorder request to API
+  const handleApplyReorder = async () => {
+    if (!data) return;
+
     try {
-      const reorderPayload = updatedTasks.map((task) => ({
+      const reorderPayload = holdTasks.map((task) => ({
         task_id: task.task_id,
-        position: task.position,
+        position: task.position || 0,
         active: task.active,
         status: task.status,
       }));
+
+      console.log('[MMQ] Applying reorder:', reorderPayload.length, 'tasks');
 
       const response = await fetch('/api/mmq-reorder', {
         method: 'PATCH',
@@ -230,6 +242,7 @@ export function MMQ({
       console.log('[MMQ] Reorder successful, starting polling');
       setSuccessMessage('Tasks reordered successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
+      setHasPendingReorder(false);
       onChangesApplied?.();
       
       // Poll mmq-queue-data every 2 seconds for 20 seconds after reorder
@@ -252,9 +265,26 @@ export function MMQ({
       setTimeout(() => setWarningMessage(null), 5000);
       onError?.(err instanceof Error ? err : errorMessage);
       
-      // Revert optimistic update
-      await fetchData();
+      // Revert to original
+      if (data) {
+        setData({
+          ...data,
+          tasks: originalTasks,
+        });
+      }
+      setHasPendingReorder(false);
     }
+  };
+
+  const handleCancelReorder = () => {
+    if (!data) return;
+    
+    console.log('[MMQ] Canceling reorder, reverting to original');
+    setData({
+      ...data,
+      tasks: originalTasks,
+    });
+    setHasPendingReorder(false);
   };
 
   const handleStatusUpdate = async (
@@ -476,6 +506,25 @@ export function MMQ({
               ) : null}
             </DragOverlay>
           </DndContext>
+
+          {hasPendingReorder && (
+            <div className="fixed bottom-6 right-6 z-50 flex gap-3 animate-slide-up">
+              <UntitledButton
+                size="md"
+                color="tertiary"
+                onClick={handleCancelReorder}
+              >
+                Cancel
+              </UntitledButton>
+              <UntitledButton
+                size="md"
+                color="primary"
+                onClick={handleApplyReorder}
+              >
+                Apply Changes
+              </UntitledButton>
+            </div>
+          )}
 
           {successMessage && (
             <SuccessToast

@@ -122,6 +122,7 @@ export async function GET(request: NextRequest) {
       total_time_tracked: task.total_time_tracked,
       changed_at: task.changed_at,
       status_pill_color: task.status_pill_color,
+      position: task.queue_num || 0,
     }));
     
     const result = {

@@ -83,6 +83,8 @@ export function TaskGroup({
           (taskOrder.get(a.task_id) ?? 0) - (taskOrder.get(b.task_id) ?? 0)
       );
     }
+    // For hold tasks, trust the order from parent component
+    // Parent already handles ordering based on position when data is fetched or dragged
     return tasks;
   }, [tasks, id, originalTasks]);  const lastWidth = useRef(window.innerWidth);
 
