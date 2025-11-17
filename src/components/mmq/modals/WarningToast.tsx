@@ -22,7 +22,7 @@ export function WarningToast({ message, onClose, duration = 5000 }: WarningToast
 
   return (
     <div className={cn(
-      "fixed top-4 right-4 z-50 transition-all duration-300",
+      "fixed bottom-4 right-4 z-50 transition-all duration-300",
       isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full"
     )}>
       <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-4 shadow-lg max-w-sm">
