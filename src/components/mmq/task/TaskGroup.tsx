@@ -189,12 +189,12 @@ export function TaskGroup({
         </div>
       </button>      <div
         className={cn(
-          'px-4 pb-4 overflow-y-auto overflow-x-visible transition-all duration-200',
+          'px-4 pt-3 pb-4 overflow-y-auto overflow-x-visible transition-all duration-200',
           isCollapsed ? 'hidden' : 'block',
           sortedTasks.length > MAX_VISIBLE_TASKS ? 'scrollbar-show' : 'scrollbar-hide'
         )}
       >
-        <div className="space-y-[11px] mt-3">
+        <div className="space-y-[11px]">
           {sortedTasks.length > 0 ? (
             <SortableContext
               items={sortedTasks
