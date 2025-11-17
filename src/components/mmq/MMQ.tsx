@@ -12,6 +12,7 @@ import {
   DragStartEvent,
   DragEndEvent,
 } from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import {
   arrayMove,
   sortableKeyboardCoordinates,
@@ -89,7 +90,6 @@ export function MMQ({
     try {
       setIsRefreshing(true);
       const accountToFetch = overrideAccount || accountNumber;
-      console.log('[MMQ] Fetching queue data for account:', accountToFetch);
       const response = await fetch(
         `/api/mmq-queue-data?accountNumber=${accountToFetch}`
       );
@@ -106,10 +106,6 @@ export function MMQ({
       }
 
       if (result.data) {
-        console.log('[MMQ] Queue data received:', {
-          taskCount: result.data.tasks.length,
-          activeTasks: result.data.active_tasks
-        });
         setData(result.data);
         setOriginalTasks(result.data.tasks);
         setHasPendingReorder(false);
@@ -169,29 +165,14 @@ export function MMQ({
   }, [data]);
 
   const handleDragStart = (event: DragStartEvent) => {
-    console.log('[MMQ] Drag started:', {
-      activeId: event.active.id,
-      container: event.active.data.current?.sortable?.containerId
-    });
     setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
-    console.log('[MMQ] Drag ended:', {
-      activeId: active.id,
-      overId: over?.id,
-      activeContainer: active.data.current?.sortable?.containerId,
-      overContainer: over?.data.current?.sortable?.containerId || over?.id,
-      hasOver: !!over,
-      isSameId: active.id === over?.id
-    });
-
     setActiveId(null);
 
     if (!over || active.id === over.id) {
-      console.log('[MMQ] Drag cancelled: no over or same position');
       return;
     }
 
@@ -200,19 +181,8 @@ export function MMQ({
     const newIndex = holdTasks.findIndex((task) => task.task_id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) {
-      console.log('[MMQ] Drag rejected: task not in hold group', {
-        activeId: active.id,
-        overId: over.id,
-        activeInHold: oldIndex !== -1,
-        overInHold: newIndex !== -1
-      });
       return;
     }
-
-    console.log('[MMQ] Drag accepted: reordering hold tasks', {
-      from: oldIndex,
-      to: newIndex
-    });
 
     const reorderedTasks = arrayMove(holdTasks, oldIndex, newIndex);
 
@@ -221,16 +191,6 @@ export function MMQ({
       ...task,
       position: index + 1,
     }));
-
-    console.log('[MMQ] Drag completed:', {
-      from: { index: oldIndex, taskId: active.id },
-      to: { index: newIndex, taskId: over.id },
-      updatedPositions: updatedTasks.map(t => ({
-        taskId: t.task_id,
-        taskName: t.name?.substring(0, 30),
-        position: t.position
-      }))
-    });
 
     // Update data state
     if (data) {
@@ -261,14 +221,6 @@ export function MMQ({
           status: task.status,
         }));
 
-      console.log('[MMQ] Applying reorder:', reorderPayload.length, 'tasks');
-      console.log('[MMQ] Reorder payload:', reorderPayload.map(t => ({
-        taskId: t.task_id,
-        position: t.position,
-        active: t.active,
-        status: t.status
-      })));
-
       const response = await fetch('/api/mmq-reorder', {
         method: 'PATCH',
         headers: {
@@ -282,23 +234,19 @@ export function MMQ({
         throw new Error(errorData.error || 'Failed to reorder tasks');
       }
 
-      console.log('[MMQ] Reorder successful, starting polling');
       setSuccessMessage('Tasks reordered successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
       setHasPendingReorder(false);
       onChangesApplied?.();
-      
+
       // Poll mmq-queue-data every 2 seconds for 20 seconds after reorder
-      console.log('[MMQ] Starting polling after reorder response');
       let pollCount = 0;
       const maxPolls = 10; // 20 seconds / 2 seconds
       const pollInterval = setInterval(async () => {
         pollCount++;
-        console.log(`[MMQ] Polling queue data after reorder (${pollCount}/${maxPolls})`);
         await fetchData();
-        
+
         if (pollCount >= maxPolls) {
-          console.log('[MMQ] Reorder polling complete');
           clearInterval(pollInterval);
         }
       }, 2000);
@@ -321,8 +269,7 @@ export function MMQ({
 
   const handleCancelReorder = () => {
     if (!data) return;
-    
-    console.log('[MMQ] Canceling reorder, reverting to original');
+
     setData({
       ...data,
       tasks: originalTasks,
@@ -344,8 +291,6 @@ export function MMQ({
       : holdTasks.findIndex((t) => t.task_id === taskId) + 1;
 
     try {
-      console.log('[MMQ] Sending play/pause request:', { action, taskId, position });
-      
       const response = await fetch('/api/mmq-play-pause', {
         method: 'PATCH',
         headers: {
@@ -359,19 +304,15 @@ export function MMQ({
         }),
       });
 
-      console.log('[MMQ] Play/pause response status:', response.status);
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update task status');
       }
 
       const result = await response.json();
-      console.log('[MMQ] Play/pause result:', result);
 
       // Update local state
       if (data) {
-        console.log('[MMQ] Updating local state');
         const updatedTasks = data.tasks.map((t) =>
           t.task_id === taskId
             ? {
@@ -389,10 +330,8 @@ export function MMQ({
           tasks: updatedTasks,
           active_tasks: updatedTasks.filter((t) => t.active).length,
         });
-        console.log('[MMQ] Local state updated');
       }
 
-      console.log('[MMQ] Setting success message');
       setSuccessMessage(
         `Task ${action === 'play' ? 'started' : 'paused'} successfully`
       );
@@ -508,6 +447,7 @@ export function MMQ({
             collisionDetection={closestCenter}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis]}
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               <TaskGroup
@@ -535,6 +475,25 @@ export function MMQ({
               />
             </div>
 
+            {hasPendingReorder && (
+              <div className="mt-8 flex justify-between items-center animate-slide-up">
+                <UntitledButton
+                  size="md"
+                  color="tertiary"
+                  onClick={handleCancelReorder}
+                >
+                  Cancel
+                </UntitledButton>
+                <UntitledButton
+                  size="md"
+                  color="primary"
+                  onClick={handleApplyReorder}
+                >
+                  Apply Changes
+                </UntitledButton>
+              </div>
+            )}
+
             <DragOverlay>
               {activeTask ? (
                 <div className="opacity-50">
@@ -549,25 +508,6 @@ export function MMQ({
               ) : null}
             </DragOverlay>
           </DndContext>
-
-          {hasPendingReorder && (
-            <div className="fixed bottom-6 right-6 z-50 flex gap-3 animate-slide-up">
-              <UntitledButton
-                size="md"
-                color="tertiary"
-                onClick={handleCancelReorder}
-              >
-                Cancel
-              </UntitledButton>
-              <UntitledButton
-                size="md"
-                color="primary"
-                onClick={handleApplyReorder}
-              >
-                Apply Changes
-              </UntitledButton>
-            </div>
-          )}
 
           {successMessage && (
             <SuccessToast

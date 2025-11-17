@@ -32,15 +32,6 @@ export default function DemoPage() {
         showAccountOverride={true}
         darkMode={true}
         showCountdownTimers={false}
-        onError={(error) => {
-          console.error("MMQ Error:", error)
-        }}
-        onDataLoaded={(data) => {
-          console.log("MMQ Data Loaded:", data)
-        }}
-        onChangesApplied={() => {
-          console.log("MMQ Changes Applied")
-        }}
       />
   )
 }

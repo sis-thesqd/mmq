@@ -5,7 +5,6 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useDroppable } from '@dnd-kit/core';
 import { cn } from '@/lib/utils';
 import { ChevronDown, AlertCircle, Infinity } from 'lucide-react';
 import { MIN_VISIBLE_TASKS, MAX_VISIBLE_TASKS } from '@/services/mmq';
@@ -85,7 +84,6 @@ export function TaskGroup({
     }
     // For hold tasks, trust the order from parent component
     // Parent already handles ordering based on position when data is fetched or dragged
-    console.log('[TaskGroup] Hold tasks:', tasks.map(t => ({ id: t.task_id, position: t.position, active: t.active })));
     return tasks;
   }, [tasks, id, originalTasks]);  const lastWidth = useRef(window.innerWidth);
 
@@ -106,14 +104,8 @@ export function TaskGroup({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const { setNodeRef, isOver } = useDroppable({
-    id,
-    data: {
-      accepts: ['task'],
-      disabled:
-        isActive && !isUnlimited && nonHoldCount >= (cap || MIN_VISIBLE_TASKS),
-    },
-  });
+  // Removed useDroppable since we're only doing within-list sorting
+  // SortableContext handles the drag and drop within the same list
 
   const getCountStyles = (count: number, isActive: boolean) => {
     if (!isActive) {
@@ -155,14 +147,8 @@ export function TaskGroup({
 
   return (
     <div
-      ref={setNodeRef}
       id={`${id}-group`}
-      className={cn(
-        'rounded-lg transition-all relative flex flex-col overflow-hidden bg-card border',
-        isOver &&
-          !isActive &&
-          'ring-2 ring-primary ring-opacity-50 scale-[1.02] shadow-lg'
-      )}
+      className="rounded-lg transition-all relative flex flex-col overflow-hidden bg-card border"
       style={{
         height: calculateHeight(),
       }}
@@ -211,15 +197,9 @@ export function TaskGroup({
         <div className="space-y-[11px] mt-3">
           {sortedTasks.length > 0 ? (
             <SortableContext
-              items={(() => {
-                const items = sortedTasks
-                  .filter((task) => !disableSorting || !task.active)
-                  .map((t) => t.task_id);
-                if (id === 'hold') {
-                  console.log('[TaskGroup] SortableContext items for hold:', items);
-                }
-                return items;
-              })()}
+              items={sortedTasks
+                .filter((task) => !disableSorting || !task.active)
+                .map((t) => t.task_id)}
               strategy={verticalListSortingStrategy}
             >
               {sortedTasks.map((task, index) => (
