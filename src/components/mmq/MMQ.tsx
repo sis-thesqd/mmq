@@ -83,6 +83,7 @@ export function MMQ({
     try {
       setIsRefreshing(true);
       const accountToFetch = overrideAccount || accountNumber;
+      console.log('[MMQ] Fetching queue data for account:', accountToFetch);
       const response = await fetch(
         `/api/mmq-queue-data?accountNumber=${accountToFetch}`
       );
@@ -99,6 +100,10 @@ export function MMQ({
       }
 
       if (result.data) {
+        console.log('[MMQ] Queue data received:', {
+          taskCount: result.data.tasks.length,
+          activeTasks: result.data.active_tasks
+        });
         setData(result.data);
         setError(null);
         onDataLoaded?.(result.data);
@@ -253,6 +258,8 @@ export function MMQ({
       : holdTasks.findIndex((t) => t.task_id === taskId) + 1;
 
     try {
+      console.log('[MMQ] Sending play/pause request:', { action, taskId, position });
+      
       const response = await fetch('/api/mmq-play-pause', {
         method: 'PATCH',
         headers: {
@@ -266,15 +273,19 @@ export function MMQ({
         }),
       });
 
+      console.log('[MMQ] Play/pause response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update task status');
       }
 
       const result = await response.json();
+      console.log('[MMQ] Play/pause result:', result);
 
       // Update local state
       if (data) {
+        console.log('[MMQ] Updating local state');
         const updatedTasks = data.tasks.map((t) =>
           t.task_id === taskId
             ? {
@@ -292,17 +303,20 @@ export function MMQ({
           tasks: updatedTasks,
           active_tasks: updatedTasks.filter((t) => t.active).length,
         });
+        console.log('[MMQ] Local state updated');
       }
 
+      console.log('[MMQ] Setting success message');
       setSuccessMessage(
         `Task ${action === 'play' ? 'started' : 'paused'} successfully`
       );
       setTimeout(() => setSuccessMessage(null), 3000);
       onChangesApplied?.();
       
-      // Refresh data to ensure consistency
+      // Refresh data once after status update
       await fetchData();
     } catch (err) {
+      console.error('[MMQ] Error in handleStatusUpdate:', err);
       const errorMessage = err instanceof Error ? err.message : String(err);
       setWarningMessage(errorMessage);
       setTimeout(() => setWarningMessage(null), 5000);
@@ -416,6 +430,7 @@ export function MMQ({
                 tasks={holdTasks}
                 originalTasks={data.tasks}
                 onStatusUpdate={handleStatusUpdate}
+                onRefresh={fetchData}
                 accountNumber={accountNumber}
                 showCountdownTimers={showCountdownTimers}
               />
@@ -426,6 +441,7 @@ export function MMQ({
                 tasks={activeTasks}
                 originalTasks={data.tasks}
                 onStatusUpdate={handleStatusUpdate}
+                onRefresh={fetchData}
                 activeTaskCount={data.active_tasks}
                 cap={data.cap}
                 accountNumber={accountNumber}

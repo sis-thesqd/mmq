@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { ChevronDown, AlertCircle, Infinity } from 'lucide-react';
 import { MIN_VISIBLE_TASKS, MAX_VISIBLE_TASKS } from '@/services/mmq';
 import { Loading } from '../layout/Loading';
+import { countActiveTasks } from '@/services/mmq/activeTaskCounter';
 
 const TaskCard = lazy(() => import('./TaskCard').then(module => ({ default: module.default })));
 
@@ -23,6 +24,7 @@ interface TaskGroupProps {
   tasks: Task[];
   originalTasks?: Task[];
   onStatusUpdate?: (taskId: string, status: string, active: boolean) => void;
+  onRefresh?: () => Promise<void>;
   activeTaskCount?: number;
   cap?: number;
   accountNumber?: number;
@@ -53,6 +55,7 @@ export function TaskGroup({
   tasks,
   originalTasks = [],
   onStatusUpdate,
+  onRefresh,
   activeTaskCount = 0,
   cap,
   accountNumber,
@@ -61,7 +64,13 @@ export function TaskGroup({
   const isActive = id === 'active';
   const isUnlimited = cap === 999;
   const disableSorting = isActive;
-  const nonHoldCount = isActive ? activeTaskCount : tasks.length;
+  
+  // Manually count active tasks from all tasks
+  const calculatedActiveCount = useMemo(() => {
+    return countActiveTasks(originalTasks.length > 0 ? originalTasks : tasks);
+  }, [originalTasks, tasks]);
+  
+  const nonHoldCount = isActive ? calculatedActiveCount : tasks.length;
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return window.innerWidth < MOBILE_BREAKPOINT;
   });
@@ -135,7 +144,7 @@ export function TaskGroup({
   const calculateTimerVisibility = (task: Task, index: number) => {
     if (!cap || (task.active && task.status.toLowerCase() !== 'dependent')) return false;
 
-    const availableSlots = cap - activeTaskCount;
+    const availableSlots = cap - calculatedActiveCount;
     if (availableSlots <= 0) return false;
 
     return index < availableSlots;
@@ -224,6 +233,7 @@ export function TaskGroup({
                       cap={cap}
                       tasks={tasks}
                       onStatusUpdate={onStatusUpdate}
+                      onRefresh={onRefresh}
                       accountNumber={accountNumber}
                       showTimer={calculateTimerVisibility(task, index)}
                       showCountdownTimers={showCountdownTimers}

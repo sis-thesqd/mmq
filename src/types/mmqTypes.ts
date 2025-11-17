@@ -6,6 +6,7 @@ export interface Task {
   submitter: string | null;
   status: string;
   active: boolean;
+  active_status?: boolean;
   latest_due_date: string;
   total_time_tracked: number;
   changed_at: string;

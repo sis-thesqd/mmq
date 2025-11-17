@@ -117,6 +117,7 @@ export async function GET(request: NextRequest) {
       submitter: task.submitter,
       status: task.status,
       active: task.active,
+      active_status: task.active_status,
       latest_due_date: task.latest_due_date || '',
       total_time_tracked: task.total_time_tracked,
       changed_at: task.changed_at,

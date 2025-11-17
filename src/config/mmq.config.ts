@@ -52,12 +52,25 @@ export const MMQ_FEATURES = {
 } as const;
 
 /**
+ * Active task counting conditions
+ * Defines what makes a task count as "active"
+ */
+export const MMQ_ACTIVE_TASK_CONDITIONS = {
+  /** Tasks must have active_status = true to be counted */
+  requireActiveFlag: true,
+  
+  /** Statuses to exclude from active count (case-insensitive) */
+  excludeStatuses: [] as string[],
+} as const;
+
+/**
  * Complete MMQ configuration object
  */
 export const MMQ_CONFIG = {
   endpoints: MMQ_API_ENDPOINTS,
   defaults: MMQ_DEFAULTS,
   features: MMQ_FEATURES,
+  activeTaskConditions: MMQ_ACTIVE_TASK_CONDITIONS,
 } as const;
 
 /**

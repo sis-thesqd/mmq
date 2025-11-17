@@ -27,6 +27,7 @@ export interface TaskCardProps {
   isOnlyItem?: boolean;
   position: number;
   onStatusUpdate?: (taskId: string, status: string, active: boolean) => void;
+  onRefresh?: () => Promise<void>;
   cap?: number;
   tasks?: Task[];
   showTimer?: boolean;
@@ -116,6 +117,7 @@ export const TaskCard = memo(function TaskCard({
   cap,
   tasks = [],
   onStatusUpdate,
+  onRefresh,
   showTimer = false,
   accountNumber,
   showCountdownTimers = false,
@@ -239,6 +241,29 @@ export const TaskCard = memo(function TaskCard({
         setTimeout(() => {
           setShowSuccessToast(false);
         }, 5000);
+      }
+
+      // Poll mmq-queue-data every 2 seconds for 20 seconds after play/pause
+      if (onRefresh) {
+        console.log('[TaskCard] Starting polling after play/pause response');
+        let pollCount = 0;
+        const maxPolls = 10; // 20 seconds / 2 seconds
+        const pollInterval = setInterval(async () => {
+          pollCount++;
+          console.log(`[TaskCard] Polling queue data (${pollCount}/${maxPolls})`);
+          
+          // Call the refresh callback to update MMQ's state
+          try {
+            await onRefresh();
+          } catch (error) {
+            console.error('[TaskCard] Error polling queue data:', error);
+          }
+          
+          if (pollCount >= maxPolls) {
+            console.log('[TaskCard] Polling complete');
+            clearInterval(pollInterval);
+          }
+        }, 2000);
       }
     } catch (error) {
       console.error('Error updating task status:', error);
