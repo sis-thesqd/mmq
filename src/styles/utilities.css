@@ -1,0 +1,97 @@
+@layer utilities {
+  /* Scrollbar utilities - necessary for hiding scrollbars */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Glass morphism effect - using @apply is acceptable for complex combinations */
+  .glass-morphism {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)];
+  }
+  
+  .dark .glass-morphism {
+    @apply backdrop-blur-xl bg-black/10 border border-white/5 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)];
+  }
+
+  /* Hover effects - can be replaced with Tailwind classes: transition-transform duration-300 ease-out hover:-translate-y-1 */
+  .hover-lift {
+    @apply transition-transform duration-300 ease-out hover:-translate-y-1;
+  }
+  
+  /* Hover scale - can be replaced with Tailwind classes: transition-transform duration-300 ease-out hover:scale-105 */
+  .hover-scale {
+    @apply transition-transform duration-300 ease-out hover:scale-105;
+  }
+
+  /* Border pulse effect - can be replaced with Tailwind classes */
+  .border-pulse {
+    @apply transition-colors duration-300 hover:border-primary;
+    /* Note: box-shadow with rgba(var(--primary), 0.1) requires custom CSS */
+  }
+  
+  .border-pulse:hover {
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+  }
+
+  /* Hardware acceleration - necessary for performance optimization */
+  .hardware-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  /* Dark mode specific gradient backgrounds - can use Tailwind classes directly */
+  .dark-gradient-subtle {
+    @apply bg-gradient-to-br from-gray-900 to-gray-800;
+  }
+  
+  .dark-gradient-primary {
+    @apply bg-gradient-to-br from-primary/20 to-background;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Page transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+

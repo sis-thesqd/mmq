@@ -1,0 +1,32 @@
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-inter antialiased min-h-screen;
+    padding-right: 0 !important;
+    overflow-y: scroll;
+  }
+
+  .dark body {
+    @apply bg-background;
+    background-image: none !important;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background transition-shadow duration-200;
+  }
+
+  button, 
+  .button, 
+  a {
+    @apply transition-all duration-200;
+  }
+}
+

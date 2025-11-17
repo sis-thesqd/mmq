@@ -1,0 +1,87 @@
+{
+  "name": "@sis-thesqd/mmq",
+  "version": "0.1.0",
+  "description": "A reusable React component for managing task queues with drag-and-drop functionality",
+  "keywords": [
+    "react",
+    "component",
+    "queue",
+    "task-management",
+    "drag-and-drop",
+    "dnd-kit"
+  ],
+  "author": "SIS The Squad",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sis-thesqd/mmq"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./src/index.ts",
+      "types": "./src/index.ts"
+    },
+    "./config": {
+      "import": "./src/config/mmq.config.ts",
+      "require": "./src/config/mmq.config.ts",
+      "types": "./src/config/mmq.config.ts"
+    },
+    "./styles": "./src/index.css",
+    "./api/*": "./app/api/*/route.ts"
+  },
+  "files": [
+    "src",
+    "app/api",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "npm": ">=8.0.0",
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "next": "^15.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "type-check": "tsc --noEmit",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@heroicons/react": "^2.0.18",
+    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-slot": "^1.2.0",
+    "@supabase/supabase-js": "^2.49.4",
+    "@tanstack/react-query": "^5.17.19",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.383.0",
+    "next": "^15.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.2.1",
+    "tailwindcss": "^3.3.3",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.9",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8",
+    "eslint-config-next": "^15.1.0",
+    "postcss": "^8.5.6",
+    "typescript": "^5.2.2"
+  }
+}
+

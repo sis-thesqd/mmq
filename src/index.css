@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * ===================================================================
+ * Brand Design System Variables
+ * ===================================================================
+ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 252 12% 21%;
+    --card: 0 0% 100%;
+    --card-foreground: 252 12% 21%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 252 12% 21%;
+    --primary: 251 76% 57%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 252 89% 84%;
+    --secondary-foreground: 252 12% 21%;
+    --muted: 252 33% 97%;
+    --muted-foreground: 252 12% 40%;
+    --accent: 252 33% 97%;
+    --accent-foreground: 252 12% 21%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --creative: 24 100% 64%;
+    --creative-foreground: 0 0% 100%;
+    --border: 252 20% 93%;
+    --input: 252 20% 93%;
+    --ring: 251 76% 57%;
+    --radius: 0.75rem;
+    --animation-fast: 150ms;
+    --animation-normal: 300ms;
+    --animation-slow: 500ms;
+    --ease-bounce: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+    --ease-in: cubic-bezier(0.32, 0, 0.67, 0);
+  }
+
+  .dark {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 251 76% 57%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 252 30% 20%;
+    --secondary-foreground: 252 89% 84%;
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 240 5% 15%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --creative: 24 70% 55%;
+    --creative-foreground: 0 0% 100%;
+    --border: 240 5% 15%;
+    --input: 240 5% 15%;
+    --ring: 251 76% 57%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-inter antialiased min-h-screen;
+    padding-right: 0 !important;
+    overflow-y: scroll;
+  }
+
+  .dark body {
+    @apply bg-background;
+    background-image: none !important;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background transition-shadow duration-200;
+  }
+
+  button, 
+  .button, 
+  a {
+    @apply transition-all duration-200;
+  }
+}
+
+@layer utilities {
+  /* Scrollbar utilities - necessary for hiding scrollbars */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Glass morphism effect - using @apply is acceptable for complex combinations */
+  .glass-morphism {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)];
+  }
+  
+  .dark .glass-morphism {
+    @apply backdrop-blur-xl bg-black/10 border border-white/5 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.5)];
+  }
+
+  /* Hover effects - can be replaced with Tailwind classes: transition-transform duration-300 ease-out hover:-translate-y-1 */
+  .hover-lift {
+    @apply transition-transform duration-300 ease-out hover:-translate-y-1;
+  }
+  
+  /* Hover scale - can be replaced with Tailwind classes: transition-transform duration-300 ease-out hover:scale-105 */
+  .hover-scale {
+    @apply transition-transform duration-300 ease-out hover:scale-105;
+  }
+
+  /* Border pulse effect - can be replaced with Tailwind classes */
+  .border-pulse {
+    @apply transition-colors duration-300 hover:border-primary;
+    /* Note: box-shadow with rgba(var(--primary), 0.1) requires custom CSS */
+  }
+  
+  .border-pulse:hover {
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+  }
+
+  /* Hardware acceleration - necessary for performance optimization */
+  .hardware-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  /* Dark mode specific gradient backgrounds - can use Tailwind classes directly */
+  .dark-gradient-subtle {
+    @apply bg-gradient-to-br from-gray-900 to-gray-800;
+  }
+  
+  .dark-gradient-primary {
+    @apply bg-gradient-to-br from-primary/20 to-background;
+  }
+}
+
+/* Theme transitions */
+:root {
+  --theme-transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+body, .theme-transition, html, div {
+  transition: var(--theme-transition);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Page transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+@import './styles/animations.css';
+@import './styles/view-transitions.css';
+@import './styles/markdown.css';
+

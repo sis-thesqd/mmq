@@ -1,0 +1,177 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  const requestId = request.headers.get('x-vercel-id') || 'no-request-id';
+  
+  try {
+    console.log('[mmq-queue-data] Request received:', {
+      requestId,
+      method: request.method,
+      timestamp: new Date().toISOString(),
+      environment: process.env.VERCEL_ENV || 'development'
+    });
+
+    const { searchParams } = new URL(request.url);
+    const accountNumber = searchParams.get('accountNumber');
+    
+    if (!accountNumber) {
+      return NextResponse.json({
+        error: 'Bad request: accountNumber query parameter is required',
+        data: null
+      }, { status: 400 });
+    }
+
+    // Get Supabase credentials
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL_READ_ONLY || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    
+    if (!supabaseUrl || !supabaseKey) {
+      const error = {
+        requestId,
+        error: 'Missing Supabase credentials',
+        timestamp: new Date().toISOString()
+      };
+      console.error('[mmq-queue-data] Configuration error:', error);
+      
+      return NextResponse.json({
+        error: 'Server configuration error: Missing Supabase credentials',
+        data: null
+      }, { status: 500 });
+    }
+
+    // Create Supabase client
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    const queryStartTime = Date.now();
+    
+    // Call the RPC function
+    console.log('Calling RPC function get_combined_account_data with account number:', accountNumber);
+    const { data, error } = await supabase
+      .rpc('get_combined_account_data', { 
+        p_account_number: parseInt(accountNumber, 10)
+      }, { get: true });
+
+    const queryDuration = Date.now() - queryStartTime;
+    const totalDuration = Date.now() - startTime;
+
+    if (error) {
+      console.error('[mmq-queue-data] RPC error:', {
+        requestId,
+        error: error.message,
+        accountNumber,
+        queryDuration: `${queryDuration}ms`,
+        totalDuration: `${totalDuration}ms`,
+        timestamp: new Date().toISOString()
+      });
+      
+      return NextResponse.json({
+        error: 'Failed to fetch queue data',
+        details: error.message,
+        data: null
+      }, { status: 500 });
+    }
+
+    if (!data || !data[0]?.combined_data) {
+      console.log('[mmq-queue-data] No data found:', {
+        requestId,
+        accountNumber,
+        hasData: !!data,
+        hasCombinedData: !!data?.[0]?.combined_data,
+        queryDuration: `${queryDuration}ms`,
+        totalDuration: `${totalDuration}ms`,
+        timestamp: new Date().toISOString()
+      });
+      
+      return NextResponse.json({
+        error: 'No queue data found for account',
+        data: null
+      }, { status: 404 });
+    }
+
+    const combinedData = data[0].combined_data;
+    const accountStats = combinedData.account_stats[0];
+    
+    if (!accountStats) {
+      console.error('[mmq-queue-data] No account statistics found:', {
+        requestId,
+        accountNumber,
+        queryDuration: `${queryDuration}ms`,
+        totalDuration: `${totalDuration}ms`,
+        timestamp: new Date().toISOString()
+      });
+      
+      return NextResponse.json({
+        error: 'No account statistics found',
+        data: null
+      }, { status: 404 });
+    }
+
+    // Transform the tasks to match the expected Task interface
+    const transformedTasks = combinedData.tasks.map((task: any) => ({
+      task_id: task.task_id,
+      name: task.name,
+      submitted_date_friendly: task.submitted_date_friendly,
+      row_created: task.row_created,
+      submitter: task.submitter,
+      status: task.status,
+      active: task.active,
+      latest_due_date: task.latest_due_date || '',
+      total_time_tracked: task.total_time_tracked,
+      changed_at: task.changed_at,
+      status_pill_color: task.status_pill_color,
+    }));
+    
+    const result = {
+      tasks: transformedTasks,
+      church: accountStats.church_name,
+      cap: accountStats.cap,
+      active_tasks: accountStats.active_tasks,
+      account: parseInt(accountNumber, 10),
+    };
+
+    console.log('[mmq-queue-data] Success:', {
+      requestId,
+      accountNumber,
+      tasksCount: transformedTasks.length,
+      churchName: accountStats.church_name,
+      cap: accountStats.cap,
+      activeTasks: accountStats.active_tasks,
+      queryDuration: `${queryDuration}ms`,
+      totalDuration: `${totalDuration}ms`,
+      timestamp: new Date().toISOString()
+    });
+
+    return NextResponse.json({
+      data: result,
+      error: null
+    });
+  } catch (error) {
+    const totalDuration = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    const errorLog = {
+      requestId,
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      } : String(error),
+      duration: `${totalDuration}ms`,
+      timestamp: new Date().toISOString(),
+      environment: process.env.VERCEL_ENV || 'development',
+      nodeVersion: process.version,
+      memoryUsage: process.memoryUsage()
+    };
+    
+    console.error('[mmq-queue-data] Fatal error:', errorLog);
+    
+    return NextResponse.json({
+      error: 'Failed to fetch queue data',
+      details: errorMessage,
+      data: null
+    }, { status: 500 });
+  }
+}
+
