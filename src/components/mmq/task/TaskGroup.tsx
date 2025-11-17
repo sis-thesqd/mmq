@@ -85,6 +85,7 @@ export function TaskGroup({
     }
     // For hold tasks, trust the order from parent component
     // Parent already handles ordering based on position when data is fetched or dragged
+    console.log('[TaskGroup] Hold tasks:', tasks.map(t => ({ id: t.task_id, position: t.position, active: t.active })));
     return tasks;
   }, [tasks, id, originalTasks]);  const lastWidth = useRef(window.innerWidth);
 
@@ -210,9 +211,15 @@ export function TaskGroup({
         <div className="space-y-[11px] mt-3">
           {sortedTasks.length > 0 ? (
             <SortableContext
-              items={sortedTasks
-                .filter((task) => !disableSorting || !task.active)
-                .map((t) => t.task_id)}
+              items={(() => {
+                const items = sortedTasks
+                  .filter((task) => !disableSorting || !task.active)
+                  .map((t) => t.task_id);
+                if (id === 'hold') {
+                  console.log('[TaskGroup] SortableContext items for hold:', items);
+                }
+                return items;
+              })()}
               strategy={verticalListSortingStrategy}
             >
               {sortedTasks.map((task, index) => (

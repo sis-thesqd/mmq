@@ -75,7 +75,11 @@ export function MMQ({
   const [originalTasks, setOriginalTasks] = useState<Task[]>([]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px of movement before dragging starts
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -165,31 +169,50 @@ export function MMQ({
   }, [data]);
 
   const handleDragStart = (event: DragStartEvent) => {
+    console.log('[MMQ] Drag started:', {
+      activeId: event.active.id,
+      container: event.active.data.current?.sortable?.containerId
+    });
     setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+
+    console.log('[MMQ] Drag ended:', {
+      activeId: active.id,
+      overId: over?.id,
+      activeContainer: active.data.current?.sortable?.containerId,
+      overContainer: over?.data.current?.sortable?.containerId || over?.id,
+      hasOver: !!over,
+      isSameId: active.id === over?.id
+    });
+
     setActiveId(null);
 
     if (!over || active.id === over.id) {
+      console.log('[MMQ] Drag cancelled: no over or same position');
       return;
     }
 
-    const activeContainer = active.data.current?.sortable?.containerId;
-    const overContainer = over.data.current?.sortable?.containerId || over.id;
-
-    // Only allow reordering within the hold group
-    if (activeContainer !== 'hold' || overContainer !== 'hold') {
-      return;
-    }
-
+    // Check if both tasks are in the hold group by finding them in holdTasks
     const oldIndex = holdTasks.findIndex((task) => task.task_id === active.id);
     const newIndex = holdTasks.findIndex((task) => task.task_id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) {
+      console.log('[MMQ] Drag rejected: task not in hold group', {
+        activeId: active.id,
+        overId: over.id,
+        activeInHold: oldIndex !== -1,
+        overInHold: newIndex !== -1
+      });
       return;
     }
+
+    console.log('[MMQ] Drag accepted: reordering hold tasks', {
+      from: oldIndex,
+      to: newIndex
+    });
 
     const reorderedTasks = arrayMove(holdTasks, oldIndex, newIndex);
 
@@ -198,6 +221,16 @@ export function MMQ({
       ...task,
       position: index + 1,
     }));
+
+    console.log('[MMQ] Drag completed:', {
+      from: { index: oldIndex, taskId: active.id },
+      to: { index: newIndex, taskId: over.id },
+      updatedPositions: updatedTasks.map(t => ({
+        taskId: t.task_id,
+        taskName: t.name?.substring(0, 30),
+        position: t.position
+      }))
+    });
 
     // Update data state
     if (data) {
@@ -217,14 +250,24 @@ export function MMQ({
     if (!data) return;
 
     try {
-      const reorderPayload = holdTasks.map((task) => ({
-        task_id: task.task_id,
-        position: task.position || 0,
-        active: task.active,
-        status: task.status,
-      }));
+      // Use tasks from current data state (not memoized holdTasks) to get updated positions
+      const reorderPayload = data.tasks
+        .filter((task) => !task.active)
+        .sort((a, b) => (a.position ?? 999999) - (b.position ?? 999999))
+        .map((task) => ({
+          task_id: task.task_id,
+          position: task.position || 0,
+          active: task.active,
+          status: task.status,
+        }));
 
       console.log('[MMQ] Applying reorder:', reorderPayload.length, 'tasks');
+      console.log('[MMQ] Reorder payload:', reorderPayload.map(t => ({
+        taskId: t.task_id,
+        position: t.position,
+        active: t.active,
+        status: t.status
+      })));
 
       const response = await fetch('/api/mmq-reorder', {
         method: 'PATCH',
