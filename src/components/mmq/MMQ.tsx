@@ -227,12 +227,25 @@ export function MMQ({
         throw new Error(errorData.error || 'Failed to reorder tasks');
       }
 
+      console.log('[MMQ] Reorder successful, starting polling');
       setSuccessMessage('Tasks reordered successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
       onChangesApplied?.();
       
-      // Refresh data to ensure consistency
-      await fetchData();
+      // Poll mmq-queue-data every 2 seconds for 20 seconds after reorder
+      console.log('[MMQ] Starting polling after reorder response');
+      let pollCount = 0;
+      const maxPolls = 10; // 20 seconds / 2 seconds
+      const pollInterval = setInterval(async () => {
+        pollCount++;
+        console.log(`[MMQ] Polling queue data after reorder (${pollCount}/${maxPolls})`);
+        await fetchData();
+        
+        if (pollCount >= maxPolls) {
+          console.log('[MMQ] Reorder polling complete');
+          clearInterval(pollInterval);
+        }
+      }, 2000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setWarningMessage(errorMessage);
