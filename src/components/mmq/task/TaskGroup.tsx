@@ -16,6 +16,7 @@ const TaskCard = lazy(() => import('./TaskCard').then(module => ({ default: modu
 const HEADER_HEIGHT = 56;
 const TASK_HEIGHT = 80;
 const TASK_GAP = 11;
+const VERTICAL_PADDING = 28; // pt-3 (12px) + pb-4 (16px)
 
 interface TaskGroupProps {
   id: string;
@@ -125,15 +126,15 @@ export function TaskGroup({
     if (isCollapsed) return '56px';
 
     if (sortedTasks.length === 0) {
-      return `${HEADER_HEIGHT + TASK_HEIGHT + 16}px`;
+      return `${HEADER_HEIGHT + TASK_HEIGHT + VERTICAL_PADDING}px`;
     }
 
     if (sortedTasks.length <= MAX_VISIBLE_TASKS) {
-      return `${HEADER_HEIGHT + (sortedTasks.length * TASK_HEIGHT) + ((sortedTasks.length - 1) * TASK_GAP) + 24}px`;
+      return `${HEADER_HEIGHT + (sortedTasks.length * TASK_HEIGHT) + ((sortedTasks.length - 1) * TASK_GAP) + VERTICAL_PADDING}px`;
     }
 
     const contentHeight = MAX_VISIBLE_TASKS * TASK_HEIGHT + (MAX_VISIBLE_TASKS - 1) * TASK_GAP;
-    return `${HEADER_HEIGHT + contentHeight}px`;
+    return `${HEADER_HEIGHT + contentHeight + VERTICAL_PADDING}px`;
   };
 
   const calculateTimerVisibility = (task: Task, index: number) => {
@@ -189,9 +190,9 @@ export function TaskGroup({
         </div>
       </button>      <div
         className={cn(
-          'px-4 pt-3 pb-4 overflow-y-auto overflow-x-visible transition-all duration-200',
+          'px-4 pt-3 pb-4 overflow-x-visible transition-all duration-200',
           isCollapsed ? 'hidden' : 'block',
-          sortedTasks.length > MAX_VISIBLE_TASKS ? 'scrollbar-show' : 'scrollbar-hide'
+          sortedTasks.length > MAX_VISIBLE_TASKS ? 'overflow-y-auto scrollbar-show' : 'overflow-y-hidden'
         )}
       >
         <div className="space-y-[11px]">
