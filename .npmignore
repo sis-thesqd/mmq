@@ -1,0 +1,46 @@
+# Source files
+src/
+app/
+
+# Config files
+tsconfig.json
+tsconfig.build.json
+tsup.config.ts
+tailwind.config.ts
+postcss.config.js
+next.config.js
+next.config.ts
+next-env.d.ts
+
+# Development
+.next/
+.turbo/
+node_modules/
+*.log
+.env*
+!.env.example
+
+# Testing
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Build files
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.github/

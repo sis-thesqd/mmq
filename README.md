@@ -4,22 +4,48 @@ A reusable React component for managing task queues with drag-and-drop functiona
 
 ## Installation
 
+First, configure npm to use GitHub Packages. Create or edit `.npmrc` in your project root:
+
+```
+@sis-thesqd:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
+```
+
+Then install the package:
+
 ```bash
 npm install @sis-thesqd/mmq
 ```
 
-## Quick Start (2-4 Lines)
+## Quick Start
+
+### 1. Install and import the component
 
 ```tsx
 import { MMQ } from '@sis-thesqd/mmq';
-import '@sis-thesqd/mmq/styles';
+import '@sis-thesqd/mmq/styles.css';
 
 export default function MyPage() {
-  return <MMQ accountNumber={12345} />;
+  return (
+    <MMQ
+      accountNumber={12345}
+      supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+      supabaseKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}
+    />
+  );
 }
 ```
 
-That's it! The component includes built-in API routes that work automatically with Next.js.
+### 2. Configure environment variables
+
+Add these to your `.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+```
+
+That's it! **No API routes needed** - the component makes all API calls directly to Supabase and the backend webhooks.
 
 ## Tech Stack
 
@@ -50,10 +76,16 @@ Open http://localhost:3000/demo?accountNumber=2800 to view the demo.
 
 ```tsx
 import { MMQ } from '@sis-thesqd/mmq';
-import '@sis-thesqd/mmq/styles';
+import '@sis-thesqd/mmq/styles.css';
 
 export default function MyPage() {
-  return <MMQ accountNumber={12345} />;
+  return (
+    <MMQ
+      accountNumber={12345}
+      supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+      supabaseKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}
+    />
+  );
 }
 ```
 
@@ -61,15 +93,19 @@ export default function MyPage() {
 
 ```tsx
 import { MMQ } from '@sis-thesqd/mmq';
-import '@sis-thesqd/mmq/styles';
+import '@sis-thesqd/mmq/styles.css';
 
 export default function Page() {
   return (
     <MMQ
       accountNumber={12345}
+      supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+      supabaseKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}
       showAccountOverride={true}
       showTitle={true}
       title="My Custom Queue"
+      reorderEndpoint="https://custom.com/reorder" // optional
+      playPauseEndpoint="https://custom.com/play-pause" // optional
       onError={(error) => {
         console.error('MMQ Error:', error);
       }}
@@ -93,20 +129,25 @@ console.log('Reorder endpoint:', MMQ_API_ENDPOINTS.reorder);
 console.log('Play/Pause endpoint:', MMQ_API_ENDPOINTS.playPause);
 ```
 
-API routes are built-in and work automatically in both development and production!
+All API calls are made directly from the package - no Next.js API routes required!
 
 ## Component Props
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `accountNumber` | `number` | Yes | - | Account number to load queue data for |
-| `onError` | `(error: Error) => void` | No | - | Callback when an error occurs |
-| `onDataLoaded` | `(data: { church: string; account: number; tasksCount: number }) => void` | No | - | Callback when data is successfully loaded |
-| `onChangesApplied` | `() => void` | No | - | Callback when changes are applied |
+| `supabaseUrl` | `string` | Yes | - | Supabase project URL for API calls |
+| `supabaseKey` | `string` | Yes | - | Supabase anonymous key for authentication |
+| `reorderEndpoint` | `string` | No | Default webhook | Custom endpoint for reorder API calls |
+| `playPauseEndpoint` | `string` | No | Default webhook | Custom endpoint for play/pause API calls |
 | `showAccountOverride` | `boolean` | No | `false` | Show account override controls |
-| `className` | `string` | No | `""` | Custom className for the container |
 | `showTitle` | `boolean` | No | `true` | Show the component title |
 | `title` | `string` | No | `"Manage My Queue"` | Custom title text |
+| `darkMode` | `boolean` | No | `false` | Enable dark mode |
+| `showCountdownTimers` | `boolean` | No | `false` | Show countdown timers for tasks |
+| `onError` | `(error: Error \| string) => void` | No | - | Callback when an error occurs |
+| `onDataLoaded` | `(data: TaskResponse) => void` | No | - | Callback when data is successfully loaded |
+| `onChangesApplied` | `() => void` | No | - | Callback when changes are applied |
 
 ## Development Setup
 
@@ -115,13 +156,12 @@ API routes are built-in and work automatically in both development and productio
 npm install
 ```
 
-2. Create a `.env.local` file (optional - only needed if hosting API routes separately):
+2. Create a `.env.local` file:
 ```bash
 # .env.local
-NEXT_PUBLIC_API_BASE_URL=https://your-deployed-api.com
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
 ```
-
-If not set, API routes will use the same domain (works out of the box with Next.js).
 
 3. Run the development server:
 ```bash
@@ -132,8 +172,6 @@ npm run dev
 ```bash
 # Navigate to http://localhost:3000/demo?accountNumber=12345
 ```
-
-> **Note:** API routes are built-in with Next.js and work automatically in development!
 
 ## Building for Production
 
@@ -151,43 +189,20 @@ npm run start
 
 ## Environment Variables
 
-The following environment variables are used by the API endpoints:
+The following environment variables are required:
 
 - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous key
-- `NEXT_PUBLIC_SUPABASE_URL_READ_ONLY` (optional) - Read-only Supabase URL
 
 Add these to your `.env.local` file for local development, or configure them in your deployment platform (Vercel, Netlify, etc.).
 
-## API Routes
+## How It Works
 
-This Next.js application includes built-in API routes in `app/api/`:
+The MMQ component makes API calls directly to:
+1. **Supabase** - for fetching queue data via RPC function `get_combined_account_data`
+2. **Backend Webhooks** - for reordering tasks and play/pause actions
 
-- `/api/mmq-queue-data` - GET queue data for an account
-- `/api/mmq-reorder` - PATCH reorder queued tasks
-- `/api/mmq-play-pause` - PATCH play/pause a task
-
-**Note:** The `mmq-update` API route has been removed as requested.
-
-### How API Routes Work in Next.js
-
-API routes in Next.js work seamlessly - just like pages! They:
-- Run as serverless functions in production
-- Work automatically in development with `npm run dev`
-- Are deployed with your Next.js application
-- Don't require any special configuration
-
-### Deployment
-
-When you deploy to Vercel, Netlify, or any Next.js-compatible platform:
-1. API routes are automatically deployed as serverless functions
-2. Set your environment variables in the platform dashboard
-3. Everything works out of the box - no additional setup needed!
-
-Required environment variables:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_SUPABASE_URL_READ_ONLY` (optional)
+**No Next.js API routes required!** All API calls are bundled within the package.
 
 ## Project Structure
 

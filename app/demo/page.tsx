@@ -8,6 +8,10 @@ export default function DemoPage() {
   const accountNumberParam = searchParams.get('accountNumber')
   const accountNumber = accountNumberParam ? parseInt(accountNumberParam, 10) : null
 
+  // Get Supabase credentials from environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL_READ_ONLY || '';
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
   if (!accountNumber || isNaN(accountNumber)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -26,9 +30,26 @@ export default function DemoPage() {
     )
   }
 
+  if (!supabaseUrl || !supabaseKey) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="max-w-md mx-auto p-6 bg-card border border-border rounded-lg">
+          <h2 className="text-xl font-semibold mb-4 text-foreground">
+            Configuration Error
+          </h2>
+          <p className="text-muted-foreground">
+            Missing Supabase credentials. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment variables.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
       <MMQ
         accountNumber={accountNumber}
+        supabaseUrl={supabaseUrl}
+        supabaseKey={supabaseKey}
         showAccountOverride={true}
         darkMode={true}
         showCountdownTimers={false}

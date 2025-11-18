@@ -32,6 +32,7 @@ import { usePolling } from '@/hooks/usePolling';
 import { UntitledTextField } from '@/components/ui/untitled/UntitledTextField';
 import { UntitledButton } from '@/components/ui/untitled/UntitledButton';
 import { Settings } from 'lucide-react';
+import { MMQApiService } from '@/services/mmq/apiService';
 
 const logger = createLogger('MMQ');
 
@@ -47,10 +48,72 @@ export interface MMQProps {
    *
    * @example
    * ```tsx
-   * <MMQ accountNumber={12345} />
+   * <MMQ accountNumber={12345} supabaseUrl="..." supabaseKey="..." />
    * ```
    */
   accountNumber: number;
+
+  /**
+   * Supabase project URL for API calls.
+   * This is required for the component to fetch queue data.
+   *
+   * @example
+   * ```tsx
+   * <MMQ
+   *   accountNumber={12345}
+   *   supabaseUrl="https://your-project.supabase.co"
+   *   supabaseKey="your-anon-key"
+   * />
+   * ```
+   */
+  supabaseUrl: string;
+
+  /**
+   * Supabase anonymous key for API authentication.
+   * This is required for the component to fetch queue data.
+   *
+   * @example
+   * ```tsx
+   * <MMQ
+   *   accountNumber={12345}
+   *   supabaseUrl="https://your-project.supabase.co"
+   *   supabaseKey="your-anon-key"
+   * />
+   * ```
+   */
+  supabaseKey: string;
+
+  /**
+   * Optional custom endpoint for reorder API calls.
+   * If not provided, uses the default webhook endpoint.
+   *
+   * @example
+   * ```tsx
+   * <MMQ
+   *   accountNumber={12345}
+   *   supabaseUrl="..."
+   *   supabaseKey="..."
+   *   reorderEndpoint="https://custom.com/reorder"
+   * />
+   * ```
+   */
+  reorderEndpoint?: string;
+
+  /**
+   * Optional custom endpoint for play/pause API calls.
+   * If not provided, uses the default webhook endpoint.
+   *
+   * @example
+   * ```tsx
+   * <MMQ
+   *   accountNumber={12345}
+   *   supabaseUrl="..."
+   *   supabaseKey="..."
+   *   playPauseEndpoint="https://custom.com/play-pause"
+   * />
+   * ```
+   */
+  playPauseEndpoint?: string;
 
   /**
    * Whether to show the account override controls.
@@ -233,6 +296,10 @@ export interface MMQProps {
  */
 export function MMQ({
   accountNumber,
+  supabaseUrl,
+  supabaseKey,
+  reorderEndpoint,
+  playPauseEndpoint,
   showAccountOverride = MMQ_DEFAULTS.showAccountOverride,
   darkMode = false,
   title = MMQ_DEFAULTS.title,
@@ -266,34 +333,27 @@ export function MMQ({
     })
   );
 
+  // Create API service instance
+  const apiService = useMemo(() => {
+    return new MMQApiService({
+      supabaseUrl,
+      supabaseKey,
+      reorderEndpoint,
+      playPauseEndpoint,
+    });
+  }, [supabaseUrl, supabaseKey, reorderEndpoint, playPauseEndpoint]);
+
   const fetchData = useCallback(async () => {
     try {
       setIsRefreshing(true);
       const accountToFetch = overrideAccount || accountNumber;
-      const response = await fetch(
-        `/api/mmq-queue-data?accountNumber=${accountToFetch}`
-      );
+      const result = await apiService.fetchQueueData(accountToFetch);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch queue data');
-      }
-
-      const result = await response.json();
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      if (result.data) {
-        setData(result.data);
-        setOriginalTasks(result.data.tasks);
-        setHasPendingReorder(false);
-        setError(null);
-        onDataLoaded?.(result.data);
-      } else {
-        throw new Error('No data received from API');
-      }
+      setData(result);
+      setOriginalTasks(result.tasks);
+      setHasPendingReorder(false);
+      setError(null);
+      onDataLoaded?.(result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
@@ -302,7 +362,7 @@ export function MMQ({
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [accountNumber, overrideAccount, onError, onDataLoaded]);
+  }, [apiService, accountNumber, overrideAccount, onError, onDataLoaded]);
 
   const { startPolling: startReorderPolling } = usePolling({
     interval: 2000,
@@ -406,18 +466,7 @@ export function MMQ({
           status: task.status,
         }));
 
-      const response = await fetch('/api/mmq-reorder', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reorderPayload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to reorder tasks');
-      }
+      await apiService.reorderTasks(reorderPayload);
 
       setSuccessMessage('Tasks reordered successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -431,7 +480,7 @@ export function MMQ({
       setWarningMessage(errorMessage);
       setTimeout(() => setWarningMessage(null), 5000);
       onError?.(err instanceof Error ? err : errorMessage);
-      
+
       // Revert to original
       if (data) {
         setData({
@@ -467,25 +516,12 @@ export function MMQ({
       : holdTasks.findIndex((t) => t.task_id === taskId) + 1;
 
     try {
-      const response = await fetch('/api/mmq-play-pause', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action,
-          task_id: taskId,
-          position,
-          view_id: `account-${accountNumber}`,
-        }),
+      const result = await apiService.playPauseTask({
+        action,
+        task_id: taskId,
+        position,
+        view_id: `account-${accountNumber}`,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update task status');
-      }
-
-      const result = await response.json();
 
       // Update local state
       if (data) {
@@ -513,7 +549,7 @@ export function MMQ({
       );
       setTimeout(() => setSuccessMessage(null), 3000);
       onChangesApplied?.();
-      
+
       // Refresh data once after status update
       await fetchData();
     } catch (err) {

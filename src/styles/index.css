@@ -1,0 +1,33 @@
+/**
+ * MMQ Component Styles
+ *
+ * This package expects the consuming application to provide CSS variables:
+ * --background, --foreground, --card, --border, --primary, --muted,
+ * --muted-foreground, --destructive, --accent, --primary-foreground, --radius,
+ * --secondary, --secondary-foreground, --creative, --creative-foreground,
+ * --popover, --popover-foreground, --card-foreground, --input, --ring
+ *
+ * These should be defined in your application's global styles.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Animation utilities specific to MMQ */
+@layer utilities {
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
