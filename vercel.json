@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build:next",
+  "buildCommand": "NEXT_PRIVATE_LOCAL_WEBPACK=true npm run build:next",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "framework": "nextjs"
