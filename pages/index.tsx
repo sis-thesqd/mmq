@@ -1,16 +1,39 @@
-'use client'
-
+import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { MMQ } from '@/components/mmq/MMQ'
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  // Disable static generation - render on each request
+  return {
+    props: {},
+  }
+}
 
 export default function MMQPage() {
   const router = useRouter()
-  const accountNumberParam = router.query.accountNumber as string | undefined
-  const accountNumber = accountNumberParam ? parseInt(accountNumberParam, 10) : 306
+  const [accountNumber, setAccountNumber] = useState<number | null>(null)
+  const [isReady, setIsReady] = useState(false)
+
+  useEffect(() => {
+    if (router.isReady) {
+      const accountNumberParam = router.query.accountNumber as string | undefined
+      setAccountNumber(accountNumberParam ? parseInt(accountNumberParam, 10) : 306)
+      setIsReady(true)
+    }
+  }, [router.isReady, router.query.accountNumber])
 
   // Get Supabase credentials from environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL_READ_ONLY || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+  if (!isReady) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
 
   if (!accountNumber || isNaN(accountNumber)) {
     return (
