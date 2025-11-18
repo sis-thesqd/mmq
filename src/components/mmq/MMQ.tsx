@@ -18,6 +18,7 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import type { Task, TaskResponse } from '@/types/mmqTypes';
+import { filterActiveTasks, filterHoldTasks } from '@/services/mmq/utils/taskUtils';
 import { TaskGroup } from './task/TaskGroup';
 import { TaskCard } from './task/TaskCard';
 import { TimerProvider } from './layout/TimerContext';
@@ -26,31 +27,210 @@ import { SuccessToast } from './modals/SuccessToast';
 import { WarningToast } from './modals/WarningToast';
 import { MMQ_DEFAULTS } from '@/config/mmq.config';
 import { cn } from '@/lib/utils';
+import { createLogger } from '@/lib/logger';
+import { usePolling } from '@/hooks/usePolling';
 import { UntitledTextField } from '@/components/ui/untitled/UntitledTextField';
 import { UntitledButton } from '@/components/ui/untitled/UntitledButton';
 import { Settings } from 'lucide-react';
 
+const logger = createLogger('MMQ');
+
+/**
+ * Props for the MMQ (Manage My Queue) component
+ *
+ * @interface MMQProps
+ */
 export interface MMQProps {
-  /** Account number to fetch queue data for */
+  /**
+   * Account number to fetch and display queue data for.
+   * This is required and must be a valid positive integer.
+   *
+   * @example
+   * ```tsx
+   * <MMQ accountNumber={12345} />
+   * ```
+   */
   accountNumber: number;
-  /** Whether to show account override controls */
+
+  /**
+   * Whether to show the account override controls.
+   * When enabled, displays an input field allowing users to override
+   * the account number to view other accounts' queues.
+   * Useful for admin/support interfaces.
+   *
+   * @default false
+   *
+   * @example
+   * ```tsx
+   * <MMQ accountNumber={12345} showAccountOverride={true} />
+   * ```
+   */
   showAccountOverride?: boolean;
-  /** Whether dark mode is enabled */
+
+  /**
+   * Whether dark mode is enabled.
+   * Applies the `.dark` class to enable dark mode styling.
+   *
+   * @default false
+   *
+   * @example
+   * ```tsx
+   * <MMQ accountNumber={12345} darkMode={true} />
+   * ```
+   */
   darkMode?: boolean;
-  /** Custom title for the component */
+
+  /**
+   * Custom title to display at the top of the component.
+   * If not provided, uses the default title from MMQ_DEFAULTS.
+   *
+   * @default "Manage My Queue"
+   *
+   * @example
+   * ```tsx
+   * <MMQ accountNumber={12345} title="My Project Queue" />
+   * ```
+   */
   title?: string;
-  /** Whether to show the title */
+
+  /**
+   * Whether to show the title section.
+   * When false, hides the entire header including title and account override controls.
+   *
+   * @default true
+   *
+   * @example
+   * ```tsx
+   * <MMQ accountNumber={12345} showTitle={false} />
+   * ```
+   */
   showTitle?: boolean;
-  /** Whether to show countdown timers */
+
+  /**
+   * Whether to show countdown timers for tasks.
+   * When enabled, displays countdown timers showing when on-hold tasks
+   * will become active based on available capacity.
+   *
+   * @default false
+   *
+   * @example
+   * ```tsx
+   * <MMQ accountNumber={12345} showCountdownTimers={true} />
+   * ```
+   */
   showCountdownTimers?: boolean;
-  /** Callback when an error occurs */
+
+  /**
+   * Callback invoked when an error occurs during data fetching or mutations.
+   * Useful for integrating with error tracking services or displaying custom error UI.
+   *
+   * @param error - The error that occurred, either an Error object or string message
+   *
+   * @example
+   * ```tsx
+   * <MMQ
+   *   accountNumber={12345}
+   *   onError={(error) => {
+   *     console.error('Queue error:', error);
+   *     trackError(error);
+   *   }}
+   * />
+   * ```
+   */
   onError?: (error: Error | string) => void;
-  /** Callback when data is loaded */
+
+  /**
+   * Callback invoked when queue data is successfully loaded.
+   * Useful for analytics, logging, or triggering other UI updates.
+   *
+   * @param data - The loaded task response data
+   *
+   * @example
+   * ```tsx
+   * <MMQ
+   *   accountNumber={12345}
+   *   onDataLoaded={(data) => {
+   *     console.log('Loaded tasks:', data.tasks.length);
+   *     console.log('Active:', data.active_tasks, 'Cap:', data.cap);
+   *   }}
+   * />
+   * ```
+   */
   onDataLoaded?: (data: TaskResponse) => void;
-  /** Callback when changes are applied */
+
+  /**
+   * Callback invoked when changes are successfully applied (reorder or play/pause).
+   * Useful for triggering related UI updates or analytics events.
+   *
+   * @example
+   * ```tsx
+   * <MMQ
+   *   accountNumber={12345}
+   *   onChangesApplied={() => {
+   *     console.log('Queue updated successfully');
+   *     refreshRelatedData();
+   *   }}
+   * />
+   * ```
+   */
   onChangesApplied?: () => void;
 }
 
+/**
+ * MMQ (Manage My Queue) - Enterprise-grade task queue management component
+ *
+ * A comprehensive React component for managing task queues with drag-and-drop reordering,
+ * play/pause controls, real-time updates, and active task capacity management.
+ *
+ * ## Key Features
+ * - **Drag-and-Drop**: Intuitive reordering of tasks in the "On Hold" queue
+ * - **Play/Pause**: Toggle tasks between active and on-hold states with capacity enforcement
+ * - **Real-time Updates**: Automatic polling after mutations to sync state
+ * - **Capacity Management**: Visual indicators for active task limits and warnings
+ * - **Account Override**: Admin feature to view other accounts' queues
+ * - **Dark Mode**: Built-in dark mode support
+ * - **Responsive**: Mobile-friendly with collapsible sections
+ * - **Type-Safe**: Full TypeScript support with comprehensive types
+ *
+ * ## Architecture
+ * The component fetches queue data from `/api/mmq-queue-data` and provides two main interactions:
+ * 1. **Reorder**: Drag tasks in "On Hold" group, then click "Apply Changes" to save
+ * 2. **Play/Pause**: Click play/pause buttons to change task status
+ *
+ * After mutations, the component polls the API every 2 seconds for 20 seconds to ensure
+ * the UI reflects backend state changes from external systems.
+ *
+ * ## Polling Strategy
+ * - After reorder: 10 polls x 2 seconds = 20 seconds total
+ * - After play/pause: 10 polls x 2 seconds = 20 seconds total
+ * - Timer-based refresh: Configurable countdown timer when slots become available
+ *
+ * ## Performance
+ * - Memoized task lists (activeTasks, holdTasks)
+ * - Lazy-loaded TaskCard components
+ * - Optimized drag-and-drop with 8px activation threshold
+ * - Request deduplication in API calls
+ *
+ * @component
+ * @example
+ * ```tsx
+ * // Basic usage
+ * <MMQ accountNumber={12345} />
+ *
+ * // With all features enabled
+ * <MMQ
+ *   accountNumber={12345}
+ *   showTitle={true}
+ *   showAccountOverride={true}
+ *   showCountdownTimers={true}
+ *   darkMode={false}
+ *   title="My Queue"
+ *   onError={(err) => console.error(err)}
+ *   onDataLoaded={(data) => console.log('Loaded:', data.tasks.length)}
+ *   onChangesApplied={() => console.log('Updated!')}
+ * />
+ * ```
+ */
 export function MMQ({
   accountNumber,
   showAccountOverride = MMQ_DEFAULTS.showAccountOverride,
@@ -124,6 +304,12 @@ export function MMQ({
     }
   }, [accountNumber, overrideAccount, onError, onDataLoaded]);
 
+  const { startPolling: startReorderPolling } = usePolling({
+    interval: 2000,
+    maxPolls: 10,
+    onPoll: fetchData,
+  });
+
   const handleAccountOverride = async () => {
     const accountNum = parseInt(overrideInput, 10);
     if (isNaN(accountNum) || accountNum <= 0) {
@@ -155,11 +341,11 @@ export function MMQ({
   }, [fetchData]);
 
   const activeTasks = useMemo(() => {
-    return data?.tasks.filter((task) => task.active) || [];
+    return data ? filterActiveTasks(data.tasks) : [];
   }, [data]);
 
   const holdTasks = useMemo(() => {
-    const filtered = data?.tasks.filter((task) => !task.active) || [];
+    const filtered = data ? filterHoldTasks(data.tasks) : [];
     // Sort by position to maintain consistent order
     return filtered.sort((a, b) => (a.position ?? 999999) - (b.position ?? 999999));
   }, [data]);
@@ -211,8 +397,7 @@ export function MMQ({
 
     try {
       // Use tasks from current data state (not memoized holdTasks) to get updated positions
-      const reorderPayload = data.tasks
-        .filter((task) => !task.active)
+      const reorderPayload = filterHoldTasks(data.tasks)
         .sort((a, b) => (a.position ?? 999999) - (b.position ?? 999999))
         .map((task) => ({
           task_id: task.task_id,
@@ -239,17 +424,8 @@ export function MMQ({
       setHasPendingReorder(false);
       onChangesApplied?.();
 
-      // Poll mmq-queue-data every 2 seconds for 20 seconds after reorder
-      let pollCount = 0;
-      const maxPolls = 10; // 20 seconds / 2 seconds
-      const pollInterval = setInterval(async () => {
-        pollCount++;
-        await fetchData();
-
-        if (pollCount >= maxPolls) {
-          clearInterval(pollInterval);
-        }
-      }, 2000);
+      // Start polling after successful reorder
+      startReorderPolling();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setWarningMessage(errorMessage);
@@ -341,7 +517,7 @@ export function MMQ({
       // Refresh data once after status update
       await fetchData();
     } catch (err) {
-      console.error('[MMQ] Error in handleStatusUpdate:', err);
+      logger.error('Error in handleStatusUpdate', err, { taskId, status, active });
       const errorMessage = err instanceof Error ? err.message : String(err);
       setWarningMessage(errorMessage);
       setTimeout(() => setWarningMessage(null), 5000);
@@ -401,6 +577,7 @@ export function MMQ({
                               onChange={(e) => setOverrideInput(e.target.value)}
                               size="sm"
                               className="w-24"
+                              aria-label="Override account number"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   handleAccountOverride();
@@ -414,6 +591,7 @@ export function MMQ({
                               color="primary"
                               onClick={handleAccountOverride}
                               disabled={!overrideInput}
+                              aria-label="Apply account override"
                             >
                               Apply
                             </UntitledButton>
@@ -421,6 +599,7 @@ export function MMQ({
                               size="sm"
                               color="tertiary"
                               onClick={handleToggleAccountOverride}
+                              aria-label="Cancel account override"
                             >
                               Cancel
                             </UntitledButton>
@@ -431,6 +610,7 @@ export function MMQ({
                             color="tertiary"
                             onClick={handleToggleAccountOverride}
                             iconLeading={Settings}
+                            aria-label="Toggle account override"
                           >
                             Override Account
                           </UntitledButton>
@@ -476,11 +656,12 @@ export function MMQ({
             </div>
 
             {hasPendingReorder && (
-              <div className="mt-8 flex justify-between items-center animate-slide-up">
+              <div className="mt-8 flex justify-between items-center animate-slide-up" role="alert">
                 <UntitledButton
                   size="md"
                   color="tertiary"
                   onClick={handleCancelReorder}
+                  aria-label="Cancel task reorder"
                 >
                   Cancel
                 </UntitledButton>
@@ -488,6 +669,7 @@ export function MMQ({
                   size="md"
                   color="primary"
                   onClick={handleApplyReorder}
+                  aria-label="Apply task reorder changes"
                 >
                   Apply Changes
                 </UntitledButton>

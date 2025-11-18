@@ -10,13 +10,29 @@ import {
 } from 'lucide-react';
 import type { Task } from '@/types/mmqTypes';
 import { MIN_VISIBLE_TASKS } from '@/services/mmq';
-import { formatStatusTimestamp } from '@/services/mmq';
+import {
+  formatStatusTimestamp,
+  formatDueDate,
+  isWithin24Hours,
+  isPastDue
+} from '@/services/mmq/utils/dateUtils';
+import {
+  getTaskStatus,
+  getTaskStatusColor,
+  isTaskOnHold,
+  countActiveWorkingTasks,
+  hexToRgb
+} from '@/services/mmq/utils/taskUtils';
 import { LoadingSpinner } from '../layout/LoadingSpinner';
 import { SuccessToast } from '../modals/SuccessToast';
 import { WarningToast } from '../modals/WarningToast';
 import { useTimer } from '../layout/TimerContext';
 import { AnimatedContent } from '../layout/AnimatedContent';
+import { usePolling } from '@/hooks/usePolling';
+import { createLogger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
+
+const logger = createLogger('TaskCard');
 
 export interface TaskCardProps {
   task: Task;
@@ -35,65 +51,20 @@ export interface TaskCardProps {
   showCountdownTimers?: boolean;
 }
 
-const isWithin24Hours = (dueDate: string) => {
-  const due = new Date(dueDate);
-  due.setDate(due.getDate() + 1);
-  const now = new Date();
-  const centralTime = 'America/Chicago';
-
-  const dueInCentral = new Date(
-    due.toLocaleString('en-US', { timeZone: centralTime })
-  );
-  const nowInCentral = new Date(
-    now.toLocaleString('en-US', { timeZone: centralTime })
-  );
-
-  const diffHours =
-    (dueInCentral.getTime() - nowInCentral.getTime()) / (1000 * 60 * 60);
-  return diffHours <= 24;
-};const isPastDue = (dueDate: string) => {
-  const due = new Date(dueDate);
-  due.setDate(due.getDate() + 1);
-  const now = new Date();
-  return due < now;
-};
-
-const formatDueDate = (dueDate: string) => {
-  const due = new Date(dueDate);
-  due.setDate(due.getDate() + 1);
-  const now = new Date();
-  const centralTime = 'America/Chicago';
-
-  const dueInCentral = new Date(
-    due.toLocaleString('en-US', { timeZone: centralTime })
-  );
-  const nowInCentral = new Date(
-    now.toLocaleString('en-US', { timeZone: centralTime })
-  );
-
-  const diffDays = Math.round(
-    (dueInCentral.getTime() - nowInCentral.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays === -1) return 'Yesterday';
-  if (diffDays > 1 && diffDays <= 14) return `${diffDays} days from now`;
-  if (diffDays < -1 && diffDays >= -2) return `${Math.abs(diffDays)} days ago`;
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    timeZone: centralTime,
-  }).format(due);
-};
-
+/**
+ * Truncates text based on screen size
+ */
 const truncateText = (text: string, isSmallScreen: boolean) => {
   if (text.length > (isSmallScreen ? 28 : 60)) {
     return `${text.slice(0, isSmallScreen ? 25 : 57)}...`;
   }
   return text;
-};const getTooltipMessage = (task: Task) => {
+};
+
+/**
+ * Gets the appropriate tooltip message based on task state
+ */
+const getTooltipMessage = (task: Task) => {
   if (task.active && task.total_time_tracked > 0) {
     return "Oops! Can't move this one, we're already working on it";
   }
@@ -139,10 +110,10 @@ export const TaskCard = memo(function TaskCard({
   } | null>(null);
   const [isPlayPauseLoading, setIsPlayPauseLoading] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>(
-    task.status || 'OPEN'
+    getTaskStatus(task)
   );
   const [currentStatusColor, setCurrentStatusColor] = useState<string>(
-    task.status_pill_color || '#87909e'
+    getTaskStatusColor(task)
   );
   const [lastUpdated, setLastUpdated] = useState<string>(task.changed_at);
   const [showNameTooltip, setShowNameTooltip] = useState(false);
@@ -160,35 +131,41 @@ export const TaskCard = memo(function TaskCard({
     task.active &&
     originalTask?.active &&
     (task.total_time_tracked > 0 || isWithin24Hours(task.latest_due_date));
-    
-  const activeTaskCount = tasks.filter(
-    (t) => t.active && (t.status || '').toLowerCase() !== 'on hold'
-  ).length;
+
+  const activeTaskCount = countActiveWorkingTasks(tasks);
   
   const isPlayDisabled =
     task.active &&
-    (currentStatus || '').toLowerCase() === 'on hold' &&
+    isTaskOnHold(task) &&
     activeTaskCount >= (cap || MIN_VISIBLE_TASKS);
 
   const { countdown, isRefreshing } = useTimer();
 
+  const { startPolling: startStatusPolling } = usePolling({
+    interval: 2000,
+    maxPolls: 10,
+    onPoll: async () => {
+      if (onRefresh) {
+        await onRefresh();
+      }
+    },
+  });
+
   useEffect(() => {
-    const status = task.status || 'OPEN';
+    const status = getTaskStatus(task);
     setCurrentStatus(status);
-    setCurrentStatusColor(status.toLowerCase() === 'on hold' ? '#868686' : (task.status_pill_color || '#87909e'));
+    setCurrentStatusColor(getTaskStatusColor(task));
     setIsActive(task.active);
-  }, [task.status]);
+  }, [task, task.status, task.status_pill_color, task.active]);
 
   const handlePlayPause = () => {
     if (isPlayPauseLoading) return;
     if (isPlayDisabled) {
-      console.log('Play disabled, showing warning toast');
       setShowWarningToast(true);
       return;
     }
 
-    const action =
-      (currentStatus || '').toLowerCase() === 'on hold' ? 'play' : 'pause';
+    const action = isTaskOnHold(task) ? 'play' : 'pause';
     handlePlayPauseConfirm(action);
   };  const handlePlayPauseConfirm = async (action: string) => {
     setIsPlayPauseLoading(true);
@@ -234,39 +211,19 @@ export const TaskCard = memo(function TaskCard({
         task.latest_due_date = response.due_date;
       }
       setLastUpdated(new Date().toISOString());
-      
+
       // Show success toast for pause actions
-      if ((currentStatus || '').toLowerCase() !== 'on hold') {
+      if (!isTaskOnHold(task)) {
         setShowSuccessToast(true);
         setTimeout(() => {
           setShowSuccessToast(false);
         }, 5000);
       }
 
-      // Poll mmq-queue-data every 2 seconds for 20 seconds after play/pause
-      if (onRefresh) {
-        console.log('[TaskCard] Starting polling after play/pause response');
-        let pollCount = 0;
-        const maxPolls = 10; // 20 seconds / 2 seconds
-        const pollInterval = setInterval(async () => {
-          pollCount++;
-          console.log(`[TaskCard] Polling queue data (${pollCount}/${maxPolls})`);
-          
-          // Call the refresh callback to update MMQ's state
-          try {
-            await onRefresh();
-          } catch (error) {
-            console.error('[TaskCard] Error polling queue data:', error);
-          }
-          
-          if (pollCount >= maxPolls) {
-            console.log('[TaskCard] Polling complete');
-            clearInterval(pollInterval);
-          }
-        }, 2000);
-      }
+      // Start polling after status update
+      startStatusPolling();
     } catch (error) {
-      console.error('Error updating task status:', error);
+      logger.error('Error updating task status', error, { taskId: task.task_id, action });
     } finally {
       setIsPlayPauseLoading(false);
     }
@@ -296,25 +253,6 @@ export const TaskCard = memo(function TaskCard({
   const style = {
     transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined,
     transition,
-  };
-
-  const hexToRgb = (hex: string) => {
-    hex = hex.split(',')[0];
-    hex = hex.replace('#', '');
-
-    if (hex.length === 3) {
-      hex = hex
-        .split('')
-        .map((char) => char + char)
-        .join('');
-    }
-
-    const bigint = parseInt(hex, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-
-    return `${r},${g},${b}`;
   };
 
   const statusRGB = hexToRgb(currentStatusColor);
@@ -364,6 +302,8 @@ export const TaskCard = memo(function TaskCard({
                 ref={playButtonRef}
                 disabled={isPlayPauseLoading || isPlayDisabled}
                 onClick={handlePlayPause}
+                aria-label={isTaskOnHold(task) ? `Resume task: ${task.name}` : `Pause task: ${task.name}`}
+                aria-disabled={isPlayPauseLoading || isPlayDisabled}
                 className={cn(
                   "p-1 rounded-full transition-colors duration-150 hover:bg-accent",
                   isPlayDisabled && "opacity-50 cursor-not-allowed"
@@ -371,7 +311,7 @@ export const TaskCard = memo(function TaskCard({
               >
                 {isPlayPauseLoading ? (
                   <LoadingSpinner size={14} className="text-muted-foreground" />
-                ) : (currentStatus || '').toLowerCase() === 'on hold' ? (
+                ) : isTaskOnHold(task) ? (
                   <Play className="w-3.5 h-3.5 fill-current" />
                 ) : (
                   <Pause className="w-3.5 h-3.5 fill-current" />
@@ -412,6 +352,7 @@ export const TaskCard = memo(function TaskCard({
                   href={`https://app.clickup.com/t/${task.task_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={`Open task ${task.name} in ClickUp (opens in new tab)`}
                   className="p-1 rounded hover:bg-accent transition-colors duration-150 flex-shrink-0 text-muted-foreground"
                 >
                   <ExternalLink className="w-4 h-4" />

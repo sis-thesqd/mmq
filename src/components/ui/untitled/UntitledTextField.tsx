@@ -38,7 +38,8 @@ export const UntitledTextField = React.forwardRef<HTMLInputElement, UntitledText
     disabled,
     ...props
   }, ref) => {
-    const fieldId = id || React.useId();
+    const generatedId = React.useId();
+    const fieldId = id || generatedId;
     const hasError = !!error;
     const isDisabled = disabled;
 

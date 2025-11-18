@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('API:mmq-queue-data');
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
   const requestId = request.headers.get('x-vercel-id') || 'no-request-id';
   
   try {
-    console.log('[mmq-queue-data] Request received:', {
+    logger.info('Request received', {
       requestId,
       method: request.method,
-      timestamp: new Date().toISOString(),
       environment: process.env.VERCEL_ENV || 'development'
     });
 
@@ -28,12 +30,9 @@ export async function GET(request: NextRequest) {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     
     if (!supabaseUrl || !supabaseKey) {
-      const error = {
-        requestId,
-        error: 'Missing Supabase credentials',
-        timestamp: new Date().toISOString()
-      };
-      console.error('[mmq-queue-data] Configuration error:', error);
+      logger.error('Configuration error: Missing Supabase credentials', undefined, {
+        requestId
+      });
       
       return NextResponse.json({
         error: 'Server configuration error: Missing Supabase credentials',
@@ -45,9 +44,9 @@ export async function GET(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     const queryStartTime = Date.now();
-    
+
     // Call the RPC function
-    console.log('Calling RPC function get_combined_account_data with account number:', accountNumber);
+    logger.debug('Calling RPC function get_combined_account_data', { accountNumber });
     const { data, error } = await supabase
       .rpc('get_combined_account_data', { 
         p_account_number: parseInt(accountNumber, 10)
@@ -57,13 +56,11 @@ export async function GET(request: NextRequest) {
     const totalDuration = Date.now() - startTime;
 
     if (error) {
-      console.error('[mmq-queue-data] RPC error:', {
+      logger.error('RPC error', error, {
         requestId,
-        error: error.message,
         accountNumber,
-        queryDuration: `${queryDuration}ms`,
-        totalDuration: `${totalDuration}ms`,
-        timestamp: new Date().toISOString()
+        queryDuration,
+        totalDuration,
       });
       
       return NextResponse.json({

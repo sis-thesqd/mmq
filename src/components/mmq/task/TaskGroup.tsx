@@ -10,6 +10,7 @@ import { ChevronDown, AlertCircle, Infinity } from 'lucide-react';
 import { MIN_VISIBLE_TASKS, MAX_VISIBLE_TASKS } from '@/services/mmq';
 import { Loading } from '../layout/Loading';
 import { countActiveTasks } from '@/services/mmq/activeTaskCounter';
+import { isWithin24Hours } from '@/services/mmq/utils/dateUtils';
 
 const TaskCard = lazy(() => import('./TaskCard').then(module => ({ default: module.default })));
 
@@ -31,23 +32,7 @@ interface TaskGroupProps {
   showCountdownTimers?: boolean;
 }
 
-const MOBILE_BREAKPOINT = 768;const isWithin24Hours = (dueDate: string) => {
-  const due = new Date(dueDate);
-  due.setDate(due.getDate() + 1);
-  const now = new Date();
-  const centralTime = 'America/Chicago';
-
-  const dueInCentral = new Date(
-    due.toLocaleString('en-US', { timeZone: centralTime })
-  );
-  const nowInCentral = new Date(
-    now.toLocaleString('en-US', { timeZone: centralTime })
-  );
-
-  const diffHours =
-    (dueInCentral.getTime() - nowInCentral.getTime()) / (1000 * 60 * 60);
-  return diffHours <= 24;
-};
+const MOBILE_BREAKPOINT = 768;
 
 export function TaskGroup({
   id,
@@ -155,6 +140,9 @@ export function TaskGroup({
       }}
     >      <button
         onClick={() => setIsCollapsed(!isCollapsed)}
+        aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${title} section`}
+        aria-expanded={!isCollapsed}
+        aria-controls={`${id}-task-list`}
         className="absolute top-0 left-0 right-0 text-base font-semibold px-4 h-14 flex items-center justify-between z-10 bg-card"
       >
         <span className="text-card-foreground">{title}</span>
