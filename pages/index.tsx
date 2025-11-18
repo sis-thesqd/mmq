@@ -1,14 +1,22 @@
 import { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { MMQ } from '@/components/mmq/MMQ'
+import dynamic from 'next/dynamic'
 
+// Force server-side rendering (not static generation) but don't SSR the MMQ component
 export const getServerSideProps: GetServerSideProps = async () => {
-  // Disable static generation - render on each request
-  return {
-    props: {},
-  }
+  return { props: {} }
 }
+
+// Dynamically import MMQ with no SSR to avoid server-side rendering issues
+const MMQ = dynamic(() => import('@/components/mmq/MMQ').then(mod => ({ default: mod.MMQ })), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-muted-foreground">Loading...</div>
+    </div>
+  ),
+})
 
 export default function MMQPage() {
   const router = useRouter()
