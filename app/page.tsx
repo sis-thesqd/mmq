@@ -7,7 +7,7 @@ import { MMQ } from '@/components/mmq/MMQ'
 function DemoContent() {
   const searchParams = useSearchParams()
   const accountNumberParam = searchParams.get('accountNumber')
-  const accountNumber = accountNumberParam ? parseInt(accountNumberParam, 10) : null
+  const accountNumber = accountNumberParam ? parseInt(accountNumberParam, 306) : null
 
   // Get Supabase credentials from environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL_READ_ONLY || '';
