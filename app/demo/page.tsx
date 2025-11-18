@@ -1,9 +1,10 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { MMQ } from '@/components/mmq/MMQ'
 
-export default function DemoPage() {
+function DemoContent() {
   const searchParams = useSearchParams()
   const accountNumberParam = searchParams.get('accountNumber')
   const accountNumber = accountNumberParam ? parseInt(accountNumberParam, 10) : null
@@ -54,6 +55,18 @@ export default function DemoPage() {
         darkMode={true}
         showCountdownTimers={false}
       />
+  )
+}
+
+export default function DemoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    }>
+      <DemoContent />
+    </Suspense>
   )
 }
 
