@@ -1,11 +1,3 @@
-import { GetServerSideProps } from 'next'
-
-export const getServerSideProps: GetServerSideProps = async () => {
-  return {
-    props: {},
-  }
-}
-
 export default function Error({ statusCode }: { statusCode?: number }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
