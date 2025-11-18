@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build:next",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "nodeVersion": "18.x"
+}
+
