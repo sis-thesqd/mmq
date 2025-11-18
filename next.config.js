@@ -16,7 +16,7 @@ const nextConfig = {
         name: 'mmq',
         filename: 'static/chunks/remoteEntry.js',
         exposes: {
-          './MMQDemo': './pages/mmq.tsx',
+          './MMQDemo': './pages/index.tsx',
         },
         shared: {
           react: {
