@@ -149,13 +149,13 @@ export function TaskGroup({
   return (
     <div
       id={`${id}-group`}
-      className="rounded-lg transition-all relative flex flex-col overflow-hidden bg-card border"
+      className="rounded-lg relative flex flex-col overflow-hidden bg-card border"
       style={{
         height: calculateHeight(),
       }}
     >      <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="w-full text-base font-semibold p-4 flex items-center justify-between z-10 bg-card rounded-lg"
+        className="absolute top-0 left-0 right-0 text-base font-semibold px-4 h-14 flex items-center justify-between z-10 bg-card"
       >
         <span className="text-card-foreground">{title}</span>
         <div className="flex items-center gap-3">
@@ -183,14 +183,14 @@ export function TaskGroup({
           </span>
           <ChevronDown
             className={cn(
-              'w-4 h-4 transition-transform duration-100 ease-in-out text-muted-foreground',
+              'w-4 h-4 text-muted-foreground',
               isCollapsed ? '' : 'rotate-180'
             )}
           />
         </div>
       </button>      <div
         className={cn(
-          'px-4 pt-3 pb-4 overflow-x-visible transition-all duration-200',
+          'px-4 pt-[68px] pb-4 overflow-x-visible',
           isCollapsed ? 'hidden' : 'block',
           sortedTasks.length > MAX_VISIBLE_TASKS ? 'overflow-y-auto scrollbar-show' : 'overflow-y-hidden'
         )}
@@ -206,10 +206,6 @@ export function TaskGroup({
               {sortedTasks.map((task, index) => (
                 <div
                   key={task.task_id}
-                  className="transition-all duration-300 animate-slide-up"
-                  style={{
-                    animationDelay: `${index * 50}ms`,
-                  }}
                 >
                   <Suspense fallback={<Loading />}>
                     <TaskCard

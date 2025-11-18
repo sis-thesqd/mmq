@@ -441,7 +441,7 @@ export const TaskCard = memo(function TaskCard({
                 >
                   <div
                     ref={statusRef}
-                    className="px-2 py-0.5 rounded-full text-[11px] font-semibold min-w-[20px] text-center cursor-help"
+                    className="px-2 py-0.5 rounded-full text-[11px] font-semibold min-w-[20px] text-center"
                     style={statusStyle}
                   >
                     {currentStatus.toUpperCase()}
