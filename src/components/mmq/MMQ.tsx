@@ -40,6 +40,7 @@ export interface MMQProps {
   accountNumber: number;
   supabaseUrl: string;
   supabaseKey: string;
+  dataEndpoint?: string;
   reorderEndpoint?: string;
   playPauseEndpoint?: string;
   showAccountOverride?: boolean;
@@ -56,6 +57,7 @@ export function MMQ({
   accountNumber,
   supabaseUrl,
   supabaseKey,
+  dataEndpoint,
   reorderEndpoint,
   playPauseEndpoint,
   showAccountOverride = MMQ_DEFAULTS.showAccountOverride,
@@ -96,10 +98,11 @@ export function MMQ({
     return new MMQApiService({
       supabaseUrl,
       supabaseKey,
+      dataEndpoint,
       reorderEndpoint,
       playPauseEndpoint,
     });
-  }, [supabaseUrl, supabaseKey, reorderEndpoint, playPauseEndpoint]);
+  }, [supabaseUrl, supabaseKey, dataEndpoint, reorderEndpoint, playPauseEndpoint]);
 
   const fetchData = useCallback(async () => {
     try {

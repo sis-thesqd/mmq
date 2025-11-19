@@ -3,8 +3,9 @@ import { MMQ_API_ENDPOINTS } from '@/config/mmq.config';
 import type { Task, TaskResponse } from '@/types/mmqTypes';
 
 export interface MMQApiConfig {
-  supabaseUrl: string;
-  supabaseKey: string;
+  supabaseUrl?: string;
+  supabaseKey?: string;
+  dataEndpoint?: string;
   reorderEndpoint?: string;
   playPauseEndpoint?: string;
 }
@@ -15,13 +16,57 @@ export class MMQApiService {
 
   constructor(config: MMQApiConfig) {
     this.config = config;
-    this.supabase = createClient(config.supabaseUrl, config.supabaseKey);
+    // Only create Supabase client if credentials are provided (for backwards compatibility)
+    if (config.supabaseUrl && config.supabaseKey) {
+      this.supabase = createClient(config.supabaseUrl, config.supabaseKey);
+    }
   }
 
   /**
-   * Fetch queue data for an account from Supabase
+   * Fetch queue data for an account via API endpoint (secure)
    */
   async fetchQueueData(accountNumber: number): Promise<TaskResponse> {
+    // Use API endpoint if available (secure - no exposed keys)
+    if (this.config.dataEndpoint) {
+      return this.fetchQueueDataViaAPI(accountNumber);
+    }
+
+    // Fallback to direct Supabase (less secure - exposes keys in browser)
+    if (this.supabase) {
+      return this.fetchQueueDataViaSupabase(accountNumber);
+    }
+
+    throw new Error('No data source configured. Provide either dataEndpoint or Supabase credentials.');
+  }
+
+  /**
+   * Fetch queue data via API endpoint (recommended)
+   */
+  private async fetchQueueDataViaAPI(accountNumber: number): Promise<TaskResponse> {
+    try {
+      const url = `${this.config.dataEndpoint}?accountNumber=${accountNumber}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`API returned status ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      return result.data;
+    } catch (error) {
+      throw error instanceof Error ? error : new Error(String(error));
+    }
+  }
+
+  /**
+   * Fetch queue data via direct Supabase call (legacy)
+   */
+  private async fetchQueueDataViaSupabase(accountNumber: number): Promise<TaskResponse> {
     try {
       const { data, error } = await this.supabase
         .rpc('get_combined_account_data', {

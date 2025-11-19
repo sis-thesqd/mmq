@@ -84,6 +84,7 @@ export default function MMQWrapper({ accountNumber: propAccountNumber }: MMQWrap
       accountNumber={accountNumber}
       supabaseUrl={supabaseUrl}
       supabaseKey={supabaseKey}
+      dataEndpoint="/api/mmq-queue-data"
       showAccountOverride={true}
       darkMode={true}
       showCountdownTimers={false}
