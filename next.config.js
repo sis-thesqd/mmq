@@ -3,6 +3,8 @@ const { NextFederationPlugin } = require('@module-federation/nextjs-mf')
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Module Federation configuration
+  // Rebuild: 2025-11-19
   transpilePackages: [
     '@dnd-kit/core',
     '@dnd-kit/sortable',
