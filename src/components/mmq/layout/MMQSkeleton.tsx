@@ -22,36 +22,47 @@ export function MMQSkeleton() {
           </div>
         </div>
 
-        {/* Two-column grid */}
+        {/* Two-column grid - exactly matching TaskGroup layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
           {/* Hold Column Skeleton */}
-          <div className="space-y-4">
-            {/* Column header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-6 w-24 bg-muted rounded animate-pulse" />
-              <div className="h-5 w-16 bg-muted rounded animate-pulse" />
-            </div>
-
-            {/* Task card skeletons */}
-            {[1, 2, 3].map((i) => (
-              <TaskCardSkeleton key={`hold-${i}`} />
-            ))}
-          </div>
+          <TaskGroupSkeleton title="On Hold" cardCount={0} />
 
           {/* Active Column Skeleton */}
-          <div className="space-y-4">
-            {/* Column header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-6 w-20 bg-muted rounded animate-pulse" />
-              <div className="h-5 w-16 bg-muted rounded animate-pulse" />
-            </div>
-
-            {/* Task card skeletons */}
-            {[1, 2].map((i) => (
-              <TaskCardSkeleton key={`active-${i}`} />
-            ))}
-          </div>
+          <TaskGroupSkeleton title="Active" cardCount={2} />
         </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Task group skeleton that matches TaskGroup component layout
+ */
+function TaskGroupSkeleton({ title, cardCount }: { title: string; cardCount: number }) {
+  return (
+    <div className="bg-card rounded-lg border border-border p-4">
+      {/* Header matching TaskGroup header */}
+      <div className="flex items-center justify-between mb-4">
+        {/* Title */}
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-20 bg-muted rounded animate-pulse" />
+        </div>
+
+        {/* Count badge */}
+        <div className="h-6 w-24 bg-muted rounded-full animate-pulse" />
+      </div>
+
+      {/* Task cards */}
+      <div className="space-y-3">
+        {cardCount === 0 ? (
+          <div className="h-20 bg-muted/30 rounded border-2 border-dashed border-muted flex items-center justify-center">
+            <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+          </div>
+        ) : (
+          Array.from({ length: cardCount }).map((_, i) => (
+            <TaskCardSkeleton key={i} />
+          ))
+        )}
       </div>
     </div>
   )
