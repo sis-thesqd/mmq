@@ -44,9 +44,6 @@ export interface MMQProps {
   reorderEndpoint?: string;
   playPauseEndpoint?: string;
   showAccountOverride?: boolean;
-  darkMode?: boolean;
-  title?: string;
-  showTitle?: boolean;
   showCountdownTimers?: boolean;
   onError?: (error: Error | string) => void;
   onDataLoaded?: (data: TaskResponse) => void;
@@ -61,9 +58,6 @@ export function MMQ({
   reorderEndpoint,
   playPauseEndpoint,
   showAccountOverride = MMQ_DEFAULTS.showAccountOverride,
-  darkMode = false,
-  title = MMQ_DEFAULTS.title,
-  showTitle = MMQ_DEFAULTS.showTitle,
   showCountdownTimers = false,
   onError,
   onDataLoaded,

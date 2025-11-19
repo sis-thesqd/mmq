@@ -2,14 +2,32 @@
 
 import { useEffect, useState } from 'react'
 import { MMQ } from './MMQ'
+import { loadMMQStyles } from '@/integration/loadCSS'
 
 interface MMQWrapperProps {
   accountNumber?: number
+  showCountdownTimers?: boolean
+  showAccountOverride?: boolean
 }
 
-export default function MMQWrapper({ accountNumber: propAccountNumber }: MMQWrapperProps) {
+export default function MMQWrapper({
+  accountNumber: propAccountNumber,
+  showCountdownTimers = false,
+  showAccountOverride = true
+}: MMQWrapperProps) {
   const [accountNumber, setAccountNumber] = useState<number | null>(null)
   const [isReady, setIsReady] = useState(false)
+  const [cssLoaded, setCssLoaded] = useState(false)
+
+  // Load CSS automatically when component mounts
+  useEffect(() => {
+    loadMMQStyles()
+      .then(() => setCssLoaded(true))
+      .catch((error) => {
+        console.error('[MMQ] Failed to load styles:', error)
+        setCssLoaded(true) // Continue even if CSS fails
+      })
+  }, [])
 
   useEffect(() => {
     // Priority: 1. Prop, 2. URL parameter, 3. Default
@@ -38,7 +56,7 @@ export default function MMQWrapper({ accountNumber: propAccountNumber }: MMQWrap
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL_READ_ONLY || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-  if (!isReady) {
+  if (!cssLoaded || !isReady) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
@@ -85,9 +103,8 @@ export default function MMQWrapper({ accountNumber: propAccountNumber }: MMQWrap
       supabaseUrl={supabaseUrl}
       supabaseKey={supabaseKey}
       dataEndpoint="/api/mmq-queue-data"
-      showAccountOverride={true}
-      darkMode={true}
-      showCountdownTimers={false}
+      showAccountOverride={showAccountOverride}
+      showCountdownTimers={showCountdownTimers}
     />
   )
 }
