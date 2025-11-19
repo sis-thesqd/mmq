@@ -69,7 +69,6 @@ export default function MMQPageContent() {
       supabaseKey={supabaseKey}
       dataEndpoint="/api/mmq-queue-data"
       showAccountOverride={true}
-      darkMode={true}
       showCountdownTimers={false}
     />
   )

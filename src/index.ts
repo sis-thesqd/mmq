@@ -15,8 +15,8 @@
  *   return (
  *     <MMQ
  *       accountNumber={12345}
- *       showTitle={true}
- *       darkMode={false}
+ *       showCountdownTimers={true}
+ *       showAccountOverride={true}
  *     />
  *   );
  * }
