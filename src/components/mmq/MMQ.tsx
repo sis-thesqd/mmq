@@ -342,7 +342,7 @@ export function MMQ({
   }
 
   return (
-    <div className={cn('min-h-screen bg-background', darkMode && 'dark')}>
+    <div className="min-h-screen bg-background">
       <TimerProvider
         onRefresh={fetchData}
         activeTaskCount={data.active_tasks}
@@ -350,13 +350,12 @@ export function MMQ({
       >
         <div className="min-h-screen bg-background pt-6 px-4 pb-4 sm:pt-6 sm:px-6 sm:pb-6 lg:pt-8 lg:px-8 lg:pb-8">
           <div className="max-w-[100rem] mx-auto">
-            {showTitle && (
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3 w-full">
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                    {title}
-                  </h1>
-                  {showAccountOverride && (
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3 w-full">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  {MMQ_DEFAULTS.title}
+                </h1>
+                {showAccountOverride && (
                     <div className="ml-auto flex items-center gap-3">
                       <div className="flex items-center gap-2">
                         {isOverrideInputVisible ? (
@@ -411,7 +410,6 @@ export function MMQ({
                   )}
                 </div>
               </div>
-            )}
 
           <DndContext
             sensors={sensors}
