@@ -5,6 +5,7 @@ import { MMQ } from './MMQ'
 import { MMQSkeleton } from './layout/MMQSkeleton'
 import { MMQErrorBoundary } from './layout/MMQErrorBoundary'
 import { loadMMQStyles } from '@/integration/loadCSS'
+import { useParentTheme } from '@/hooks/useParentTheme'
 
 interface MMQWrapperProps {
   accountNumber?: number
@@ -23,6 +24,9 @@ function MMQWrapperContent({
   const [isReady, setIsReady] = useState(false)
   const [cssLoaded, setCssLoaded] = useState(false)
   const [cssError, setCssError] = useState<string | null>(null)
+
+  // Detect parent application's theme
+  const theme = useParentTheme()
 
   // Load CSS automatically when component mounts with timeout
   useEffect(() => {
@@ -88,7 +92,7 @@ function MMQWrapperContent({
   if (cssError) {
     return (
       <div
-        className="min-h-screen bg-background flex items-center justify-center p-6"
+        className={`min-h-screen bg-background flex items-center justify-center p-6 ${theme === 'dark' ? 'dark' : ''}`}
         role="alert"
         aria-live="assertive"
         data-mmq-root
@@ -121,7 +125,7 @@ function MMQWrapperContent({
 
   if (!accountNumber || isNaN(accountNumber)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center" data-mmq-root>
+      <div className={`min-h-screen bg-background flex items-center justify-center ${theme === 'dark' ? 'dark' : ''}`} data-mmq-root>
         <div className="max-w-md mx-auto p-6 bg-card border border-border rounded-lg">
           <h2 className="text-xl font-semibold mb-4 text-foreground">
             MMQ Component
@@ -139,7 +143,7 @@ function MMQWrapperContent({
 
   if (!supabaseUrl || !supabaseKey) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center" data-mmq-root>
+      <div className={`min-h-screen bg-background flex items-center justify-center ${theme === 'dark' ? 'dark' : ''}`} data-mmq-root>
         <div className="max-w-md mx-auto p-6 bg-card border border-border rounded-lg">
           <h2 className="text-xl font-semibold mb-4 text-foreground">
             Configuration Error
@@ -153,14 +157,16 @@ function MMQWrapperContent({
   }
 
   return (
-    <MMQ
-      accountNumber={accountNumber}
-      supabaseUrl={supabaseUrl}
-      supabaseKey={supabaseKey}
-      dataEndpoint="/api/mmq-queue-data"
-      showAccountOverride={showAccountOverride}
-      showCountdownTimers={showCountdownTimers}
-    />
+    <div className={`min-h-screen bg-background ${theme === 'dark' ? 'dark' : ''}`} data-theme-wrapper>
+      <MMQ
+        accountNumber={accountNumber}
+        supabaseUrl={supabaseUrl}
+        supabaseKey={supabaseKey}
+        dataEndpoint="/api/mmq-queue-data"
+        showAccountOverride={showAccountOverride}
+        showCountdownTimers={showCountdownTimers}
+      />
+    </div>
   )
 }
 
