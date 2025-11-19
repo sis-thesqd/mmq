@@ -25,10 +25,10 @@ export function MMQSkeleton() {
         {/* Two-column grid - exactly matching TaskGroup layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
           {/* Hold Column Skeleton */}
-          <TaskGroupSkeleton title="On Hold" cardCount={0} />
+          <TaskGroupSkeleton title="On Hold" />
 
           {/* Active Column Skeleton */}
-          <TaskGroupSkeleton title="Active" cardCount={2} />
+          <TaskGroupSkeleton title="Active" />
         </div>
       </div>
     </div>
@@ -38,7 +38,7 @@ export function MMQSkeleton() {
 /**
  * Task group skeleton that matches TaskGroup component layout
  */
-function TaskGroupSkeleton({ title, cardCount }: { title: string; cardCount: number }) {
+function TaskGroupSkeleton({ title }: { title: string }) {
   return (
     <div className="bg-card rounded-lg border border-border p-4">
       {/* Header matching TaskGroup header */}
@@ -52,17 +52,9 @@ function TaskGroupSkeleton({ title, cardCount }: { title: string; cardCount: num
         <div className="h-6 w-24 bg-muted rounded-full animate-pulse" />
       </div>
 
-      {/* Task cards */}
-      <div className="space-y-3">
-        {cardCount === 0 ? (
-          <div className="h-20 bg-muted/30 rounded border-2 border-dashed border-muted flex items-center justify-center">
-            <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-          </div>
-        ) : (
-          Array.from({ length: cardCount }).map((_, i) => (
-            <TaskCardSkeleton key={i} />
-          ))
-        )}
+      {/* Empty state skeleton - same for both columns */}
+      <div className="h-20 rounded border-2 border-dashed border-border/50 flex items-center justify-center">
+        <div className="h-4 w-32 bg-muted/50 rounded animate-pulse" />
       </div>
     </div>
   )
