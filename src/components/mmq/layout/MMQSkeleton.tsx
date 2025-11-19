@@ -13,6 +13,7 @@ export function MMQSkeleton() {
       aria-live="polite"
       aria-busy="true"
       aria-label="Loading task queue"
+      data-mmq-root
     >
       {/* Screen reader announcement */}
       <span className="sr-only">Loading task queue, please wait...</span>

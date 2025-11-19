@@ -326,7 +326,7 @@ export function MMQ({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-background" data-mmq-root>
         <div className="max-w-md mx-auto p-6 bg-card border border-border rounded-lg">
           <h2 className="text-xl font-semibold mb-4 text-foreground">
             Error Loading Queue
@@ -342,7 +342,7 @@ export function MMQ({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" data-mmq-root>
       {/* Screen reader announcements for status changes */}
       <div
         role="status"

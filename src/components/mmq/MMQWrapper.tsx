@@ -91,6 +91,7 @@ function MMQWrapperContent({
         className="min-h-screen bg-background flex items-center justify-center p-6"
         role="alert"
         aria-live="assertive"
+        data-mmq-root
       >
         <div className="max-w-md mx-auto bg-card border border-destructive/50 rounded-lg p-6 space-y-4">
           <div className="flex items-center gap-3">
@@ -120,7 +121,7 @@ function MMQWrapperContent({
 
   if (!accountNumber || isNaN(accountNumber)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center" data-mmq-root>
         <div className="max-w-md mx-auto p-6 bg-card border border-border rounded-lg">
           <h2 className="text-xl font-semibold mb-4 text-foreground">
             MMQ Component
@@ -138,7 +139,7 @@ function MMQWrapperContent({
 
   if (!supabaseUrl || !supabaseKey) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center" data-mmq-root>
         <div className="max-w-md mx-auto p-6 bg-card border border-border rounded-lg">
           <h2 className="text-xl font-semibold mb-4 text-foreground">
             Configuration Error

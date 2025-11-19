@@ -1,32 +1,24 @@
 @layer base {
-  * {
+  /* Scoped border styles - only apply within MMQ component context */
+  [data-mmq-root] * {
     @apply border-border;
   }
-  
-  html {
-    overflow-y: scroll;
-    scrollbar-gutter: stable;
-  }
-  
-  body {
-    @apply bg-background text-foreground font-inter antialiased min-h-screen;
-    padding-right: 0 !important;
-    overflow-y: scroll;
-  }
 
-  .dark body {
-    @apply bg-background;
-    background-image: none !important;
-  }
-
-  *:focus-visible {
+  /* Focus styles - scoped to MMQ component */
+  [data-mmq-root] *:focus-visible {
     @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background transition-shadow duration-200;
   }
 
-  button, 
-  .button, 
-  a {
+  /* Transition styles - scoped to MMQ component */
+  [data-mmq-root] button,
+  [data-mmq-root] .button,
+  [data-mmq-root] a {
     @apply transition-all duration-200;
+  }
+
+  /* MMQ container styles - replaces body styles */
+  [data-mmq-root] {
+    @apply font-inter antialiased;
   }
 }
 
