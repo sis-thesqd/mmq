@@ -75,41 +75,53 @@ export default async function handler(
 /**
  * Find the latest CSS file in the build directory
  * Returns the filename (not full path)
+ *
+ * Strategy:
+ * 1. Read Next.js build manifest
+ * 2. Extract CSS files from pages entries
+ * 3. Return the app-level CSS (not page-specific)
  */
 async function findLatestCSSFile(): Promise<string> {
   try {
-    // In Vercel/production, use environment variable or fallback
-    if (process.env.VERCEL_ENV) {
-      // Try to read from build manifest
-      const buildManifestPath = path.join(process.cwd(), '.next', 'build-manifest.json');
-      if (fs.existsSync(buildManifestPath)) {
-        const manifest = JSON.parse(fs.readFileSync(buildManifestPath, 'utf-8'));
-        // Extract CSS file from manifest
-        const cssFiles = Object.values(manifest.pages)
-          .flat()
-          .filter((file: any) => typeof file === 'string' && file.endsWith('.css'))
-          .map((file: any) => file.replace('static/css/', ''));
+    // Read Next.js build manifest
+    const buildManifestPath = path.join(process.cwd(), '.next', 'build-manifest.json');
 
-        if (cssFiles.length > 0) {
-          return cssFiles[0] as string;
+    if (fs.existsSync(buildManifestPath)) {
+      const manifest = JSON.parse(fs.readFileSync(buildManifestPath, 'utf-8'));
+
+      // Look for CSS in the pages manifest
+      // Next.js structure: { pages: { '/': ['static/css/xxx.css', ...], ... } }
+      for (const [page, files] of Object.entries(manifest.pages)) {
+        const pageFiles = files as string[];
+        for (const file of pageFiles) {
+          if (file.startsWith('static/css/') && file.endsWith('.css')) {
+            // Extract just the filename with hash
+            return file.replace('static/css/', '');
+          }
         }
       }
     }
 
-    // Fallback: scan the CSS directory
+    // Fallback: Direct filesystem scan
     const cssDir = path.join(process.cwd(), '.next', 'static', 'css');
     if (fs.existsSync(cssDir)) {
-      const files = fs.readdirSync(cssDir).filter(file => file.endsWith('.css'));
+      const files = fs.readdirSync(cssDir)
+        .filter(file => file.endsWith('.css'))
+        .sort((a, b) => {
+          // Sort by modification time, newest first
+          const statA = fs.statSync(path.join(cssDir, a));
+          const statB = fs.statSync(path.join(cssDir, b));
+          return statB.mtimeMs - statA.mtimeMs;
+        });
+
       if (files.length > 0) {
-        // Return the first CSS file found
         return files[0];
       }
     }
 
-    // Final fallback to known working file
-    return '77ecdc29b68b0c62.css';
+    throw new Error('No CSS file found in build directory');
   } catch (error) {
-    console.error('[findLatestCSSFile] Error:', error);
-    return '77ecdc29b68b0c62.css';
+    console.error('[findLatestCSSFile] Critical error:', error);
+    throw error; // Don't fallback - let the error propagate
   }
 }
