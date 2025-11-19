@@ -12,16 +12,26 @@ export default function MMQWrapper({ accountNumber: propAccountNumber }: MMQWrap
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    // Use prop if provided, otherwise read from URL
-    if (propAccountNumber) {
-      setAccountNumber(propAccountNumber)
-      setIsReady(true)
+    // Priority: 1. Prop, 2. URL parameter, 3. Default
+    let finalAccountNumber: number | null = null
+
+    if (propAccountNumber !== undefined && propAccountNumber !== null) {
+      finalAccountNumber = propAccountNumber
     } else if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const accountNumberParam = params.get('accountNumber')
-      setAccountNumber(accountNumberParam ? parseInt(accountNumberParam, 10) : 306)
-      setIsReady(true)
+      if (accountNumberParam) {
+        finalAccountNumber = parseInt(accountNumberParam, 10)
+      }
     }
+
+    // Set default if nothing found
+    if (!finalAccountNumber) {
+      finalAccountNumber = 306
+    }
+
+    setAccountNumber(finalAccountNumber)
+    setIsReady(true)
   }, [propAccountNumber])
 
   // Get Supabase credentials from environment variables
