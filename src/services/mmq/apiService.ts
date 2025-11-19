@@ -16,18 +16,9 @@ export class MMQApiService {
 
   constructor(config: MMQApiConfig) {
     this.config = config;
-    console.log('[MMQApiService] Constructor called with config:', {
-      hasSupabaseUrl: !!config.supabaseUrl,
-      hasSupabaseKey: !!config.supabaseKey,
-      hasDataEndpoint: !!config.dataEndpoint,
-      dataEndpoint: config.dataEndpoint,
-      hasReorderEndpoint: !!config.reorderEndpoint,
-      hasPlayPauseEndpoint: !!config.playPauseEndpoint,
-    });
     // Only create Supabase client if credentials are provided (for backwards compatibility)
     if (config.supabaseUrl && config.supabaseKey) {
       this.supabase = createClient(config.supabaseUrl, config.supabaseKey);
-      console.log('[MMQApiService] Supabase client created');
     }
   }
 
@@ -35,22 +26,13 @@ export class MMQApiService {
    * Fetch queue data for an account via API endpoint (secure)
    */
   async fetchQueueData(accountNumber: number): Promise<TaskResponse> {
-    console.log('[MMQApiService] fetchQueueData called:', {
-      accountNumber,
-      hasDataEndpoint: !!this.config.dataEndpoint,
-      dataEndpoint: this.config.dataEndpoint,
-      hasSupabase: !!this.supabase,
-    });
-
     // Use API endpoint if available (secure - no exposed keys)
     if (this.config.dataEndpoint) {
-      console.log('[MMQApiService] Using API endpoint:', this.config.dataEndpoint);
       return this.fetchQueueDataViaAPI(accountNumber);
     }
 
     // Fallback to direct Supabase (less secure - exposes keys in browser)
     if (this.supabase) {
-      console.log('[MMQApiService] WARNING: Using direct Supabase call (credentials exposed in browser!)');
       return this.fetchQueueDataViaSupabase(accountNumber);
     }
 
