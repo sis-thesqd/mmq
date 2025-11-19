@@ -7,7 +7,16 @@
 
 export function MMQSkeleton() {
   return (
-    <div className="min-h-screen bg-background pt-6 px-4 pb-4 sm:pt-6 sm:px-6 sm:pb-6 lg:pt-8 lg:px-8 lg:pb-8">
+    <div
+      className="min-h-screen bg-background pt-6 px-4 pb-4 sm:pt-6 sm:px-6 sm:pb-6 lg:pt-8 lg:px-8 lg:pb-8"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading task queue"
+    >
+      {/* Screen reader announcement */}
+      <span className="sr-only">Loading task queue, please wait...</span>
+
       <div className="max-w-[100rem] mx-auto">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between mb-6">
@@ -40,7 +49,7 @@ export function MMQSkeleton() {
  */
 function TaskGroupSkeleton({ title }: { title: string }) {
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
+    <div className="bg-card rounded-lg p-4">
       {/* Header matching TaskGroup header */}
       <div className="flex items-center justify-between mb-4">
         {/* Title */}

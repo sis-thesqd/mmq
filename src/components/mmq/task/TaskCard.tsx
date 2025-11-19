@@ -267,6 +267,8 @@ export const TaskCard = memo(function TaskCard({
           if (cardRef) cardRef.current = node;
         }}
         style={style}
+        role="article"
+        aria-label={`Task: ${task.name}. Position ${position}. Status: ${currentStatus}. Due: ${task.latest_due_date ? formatDueDate(task.latest_due_date) : 'Not set'}.`}
         className={cn(
           'rounded-lg shadow-sm border transition-all duration-150 relative bg-card',
           !task.active &&
@@ -287,11 +289,15 @@ export const TaskCard = memo(function TaskCard({
                 "py-3",
                 !isOnlyItem && "cursor-grab active:cursor-grabbing"
               )}
+              aria-label={!isOnlyItem ? `Drag to reorder task: ${task.name}. Use keyboard to activate drag mode, arrow keys to move, and enter to drop.` : undefined}
+              role={!isOnlyItem ? "button" : undefined}
+              tabIndex={!isOnlyItem ? 0 : undefined}
               {...(!isOnlyItem ? { ...attributes, ...listeners } : {})}
             >
               {!isOnlyItem && (
                 <GripVertical
                   className="w-3.5 h-3.5 text-muted-foreground"
+                  aria-hidden="true"
                 />
               )}
             </div>

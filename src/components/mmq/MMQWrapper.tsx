@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { MMQ } from './MMQ'
 import { MMQSkeleton } from './layout/MMQSkeleton'
+import { MMQErrorBoundary } from './layout/MMQErrorBoundary'
 import { loadMMQStyles } from '@/integration/loadCSS'
 
 interface MMQWrapperProps {
@@ -11,7 +12,9 @@ interface MMQWrapperProps {
   showAccountOverride?: boolean
 }
 
-export default function MMQWrapper({
+const CSS_LOAD_TIMEOUT = 10000 // 10 seconds
+
+function MMQWrapperContent({
   accountNumber: propAccountNumber,
   showCountdownTimers = false,
   showAccountOverride = true
@@ -19,15 +22,39 @@ export default function MMQWrapper({
   const [accountNumber, setAccountNumber] = useState<number | null>(null)
   const [isReady, setIsReady] = useState(false)
   const [cssLoaded, setCssLoaded] = useState(false)
+  const [cssError, setCssError] = useState<string | null>(null)
 
-  // Load CSS automatically when component mounts
+  // Load CSS automatically when component mounts with timeout
   useEffect(() => {
-    loadMMQStyles()
-      .then(() => setCssLoaded(true))
-      .catch((error) => {
-        console.error('[MMQ] Failed to load styles:', error)
-        setCssLoaded(true) // Continue even if CSS fails
-      })
+    let timeoutId: NodeJS.Timeout
+
+    const loadWithTimeout = async () => {
+      try {
+        // Set timeout
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('CSS loading timed out after 10 seconds. Please check your network connection and try again.'))
+          }, CSS_LOAD_TIMEOUT)
+        })
+
+        // Race between loading and timeout
+        await Promise.race([loadMMQStyles(), timeoutPromise])
+
+        clearTimeout(timeoutId)
+        setCssLoaded(true)
+      } catch (error) {
+        clearTimeout(timeoutId)
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load styles'
+        console.error('[MMQ] CSS loading error:', errorMessage)
+        setCssError(errorMessage)
+      }
+    }
+
+    loadWithTimeout()
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+    }
   }, [])
 
   useEffect(() => {
@@ -56,6 +83,36 @@ export default function MMQWrapper({
   // Get Supabase credentials from environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL_READ_ONLY || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+  // Show error if CSS failed to load
+  if (cssError) {
+    return (
+      <div
+        className="min-h-screen bg-background flex items-center justify-center p-6"
+        role="alert"
+        aria-live="assertive"
+      >
+        <div className="max-w-md mx-auto bg-card border border-destructive/50 rounded-lg p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+              <span className="text-destructive text-xl">⚠</span>
+            </div>
+            <h2 className="text-xl font-semibold text-foreground">
+              Failed to Load Styles
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground">{cssError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            aria-label="Retry loading MMQ styles by reloading the page"
+            className="w-full h-10 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!cssLoaded || !isReady) {
     return <MMQSkeleton />
@@ -103,5 +160,20 @@ export default function MMQWrapper({
       showAccountOverride={showAccountOverride}
       showCountdownTimers={showCountdownTimers}
     />
+  )
+}
+
+/**
+ * MMQWrapper with Error Boundary
+ *
+ * Wraps the MMQ component with an error boundary to prevent errors from
+ * crashing the consuming application. Any errors will be caught and displayed
+ * with a user-friendly fallback UI.
+ */
+export default function MMQWrapper(props: MMQWrapperProps) {
+  return (
+    <MMQErrorBoundary>
+      <MMQWrapperContent {...props} />
+    </MMQErrorBoundary>
   )
 }

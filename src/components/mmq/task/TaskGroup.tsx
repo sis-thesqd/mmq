@@ -145,7 +145,7 @@ export function TaskGroup({
         aria-controls={`${id}-task-list`}
         className="absolute top-0 left-0 right-0 text-base font-semibold px-4 h-14 flex items-center justify-between z-10 bg-card"
       >
-        <span className="text-card-foreground">{title}</span>
+        <span id={`${id}-heading`} className="text-card-foreground">{title}</span>
         <div className="flex items-center gap-3">
           <span
             className={cn(
@@ -177,13 +177,17 @@ export function TaskGroup({
           />
         </div>
       </button>      <div
+        id={`${id}-task-list`}
+        role="region"
+        aria-labelledby={`${id}-heading`}
+        aria-label={`${title} task list containing ${sortedTasks.length} ${sortedTasks.length === 1 ? 'task' : 'tasks'}`}
         className={cn(
           'px-4 pt-[68px] pb-4 overflow-x-visible',
           isCollapsed ? 'hidden' : 'block',
           sortedTasks.length > MAX_VISIBLE_TASKS ? 'overflow-y-auto scrollbar-show' : 'overflow-y-hidden'
         )}
       >
-        <div className="space-y-[11px]">
+        <div className="space-y-[11px]" role="list">
           {sortedTasks.length > 0 ? (
             <SortableContext
               items={sortedTasks
@@ -194,6 +198,7 @@ export function TaskGroup({
               {sortedTasks.map((task, index) => (
                 <div
                   key={task.task_id}
+                  role="listitem"
                 >
                   <Suspense fallback={<Loading />}>
                     <TaskCard

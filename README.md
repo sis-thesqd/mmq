@@ -130,6 +130,247 @@ console.log('Play/Pause endpoint:', MMQ_API_ENDPOINTS.playPause);
 
 All API calls are made directly from the package - no Next.js API routes required!
 
+## Framework-Specific Integration Examples
+
+### Next.js App Router (Recommended)
+
+The MMQ component uses client-side features (drag-and-drop, state management). Use the `'use client'` directive:
+
+```tsx
+// app/queue/page.tsx
+'use client';
+
+import { MMQ } from '@sis-thesqd/mmq';
+import '@sis-thesqd/mmq/styles.css';
+
+export default function QueuePage() {
+  return (
+    <div>
+      <MMQ
+        accountNumber={12345}
+        supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+        supabaseKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}
+        showAccountOverride={true}
+      />
+    </div>
+  );
+}
+```
+
+### Next.js Pages Router
+
+```tsx
+// pages/queue.tsx
+import { MMQ } from '@sis-thesqd/mmq';
+import '@sis-thesqd/mmq/styles.css';
+
+export default function QueuePage() {
+  return (
+    <MMQ
+      accountNumber={12345}
+      supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+      supabaseKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}
+    />
+  );
+}
+```
+
+### Create React App
+
+```tsx
+// src/App.tsx
+import { MMQ } from '@sis-thesqd/mmq';
+import '@sis-thesqd/mmq/styles.css';
+
+function App() {
+  return (
+    <div className="App">
+      <MMQ
+        accountNumber={12345}
+        supabaseUrl={process.env.REACT_APP_SUPABASE_URL!}
+        supabaseKey={process.env.REACT_APP_SUPABASE_ANON_KEY!}
+      />
+    </div>
+  );
+}
+
+export default App;
+```
+
+**Note**: Create React App uses `REACT_APP_` prefix for environment variables.
+
+### Vite + React
+
+```tsx
+// src/App.tsx
+import { MMQ } from '@sis-thesqd/mmq';
+import '@sis-thesqd/mmq/styles.css';
+
+function App() {
+  return (
+    <MMQ
+      accountNumber={12345}
+      supabaseUrl={import.meta.env.VITE_SUPABASE_URL}
+      supabaseKey={import.meta.env.VITE_SUPABASE_ANON_KEY}
+    />
+  );
+}
+
+export default App;
+```
+
+**Note**: Vite uses `VITE_` prefix and `import.meta.env` for environment variables.
+
+### With Error Handling
+
+```tsx
+'use client';
+
+import { MMQ } from '@sis-thesqd/mmq';
+import '@sis-thesqd/mmq/styles.css';
+import { useState } from 'react';
+
+export default function QueuePage() {
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <div>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          Error: {error}
+        </div>
+      )}
+
+      <MMQ
+        accountNumber={12345}
+        supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+        supabaseKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}
+        onError={(err) => {
+          const message = err instanceof Error ? err.message : String(err);
+          setError(message);
+          console.error('MMQ Error:', message);
+        }}
+        onDataLoaded={(data) => {
+          console.log(`Loaded ${data.tasks.length} tasks`);
+          setError(null);
+        }}
+      />
+    </div>
+  );
+}
+```
+
+## Troubleshooting
+
+### Component doesn't render or shows blank screen
+
+**Possible causes:**
+- Missing environment variables
+- Invalid account number
+- Network connectivity issues
+- CSS not loaded
+
+**Solutions:**
+1. Check that environment variables are set correctly:
+   ```bash
+   # .env.local for Next.js
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   ```
+
+2. Verify the CSS import is present:
+   ```tsx
+   import '@sis-thesqd/mmq/styles.css';
+   ```
+
+3. Open browser console to check for error messages
+
+4. Verify account number exists in your Supabase database
+
+### "Failed to Load Styles" error
+
+This error appears when CSS loading times out (>10 seconds).
+
+**Solutions:**
+- Check your network connection
+- Verify the package is correctly installed: `npm list @sis-thesqd/mmq`
+- Try clearing your browser cache
+- Click the "Retry" button in the error UI
+
+### TypeScript errors about missing types
+
+**Solution:** Install type definitions and ensure your `tsconfig.json` includes:
+```json
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx"
+  }
+}
+```
+
+### Drag and drop not working
+
+**Possible causes:**
+- Component not marked as client-side in Next.js App Router
+- Touch device without proper event listeners
+
+**Solutions:**
+1. For Next.js App Router, add `'use client'` directive
+2. Ensure you're not wrapping the component in any conflicting drag-drop contexts
+3. Check browser console for errors
+
+### Styles not applying correctly
+
+**Solutions:**
+1. Ensure CSS is imported **after** the component import:
+   ```tsx
+   import { MMQ } from '@sis-thesqd/mmq';
+   import '@sis-thesqd/mmq/styles.css'; // Import CSS after component
+   ```
+
+2. If using Tailwind CSS, ensure the MMQ styles don't conflict:
+   ```js
+   // tailwind.config.js
+   module.exports = {
+     content: [
+       './src/**/*.{js,ts,jsx,tsx}',
+       './node_modules/@sis-thesqd/mmq/**/*.{js,ts,jsx,tsx}' // Add this
+     ]
+   }
+   ```
+
+### API calls failing
+
+**Check these common issues:**
+1. Supabase credentials are correct and active
+2. Supabase RPC function `get_combined_account_data` exists
+3. Account number exists in your database
+4. Network tab shows the actual error response
+
+### Performance issues with large task lists
+
+**Optimizations:**
+- The component already implements virtualization for large lists
+- Limit the number of tasks returned from your Supabase query
+- Consider pagination if you have >100 tasks
+
+### Error Boundary catches an error
+
+The component includes an error boundary that prevents crashes. When you see the error UI:
+
+1. Check the error details (click to expand)
+2. Click "Reload Page" to recover
+3. Check browser console for full error stack
+4. Verify all props are valid
+5. Check that Supabase credentials are correct
+
+If errors persist, please open an issue with:
+- Error message and stack trace
+- Browser and version
+- Framework and version (Next.js, React, etc.)
+- Steps to reproduce
+
 ## Component Props
 
 | Prop | Type | Required | Default | Description |

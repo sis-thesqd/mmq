@@ -343,6 +343,18 @@ export function MMQ({
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Screen reader announcements for status changes */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {successMessage && `Success: ${successMessage}`}
+        {warningMessage && `Warning: ${warningMessage}`}
+        {isRefreshing && 'Refreshing queue data'}
+      </div>
+
       <TimerProvider
         onRefresh={fetchData}
         activeTaskCount={data.active_tasks}
