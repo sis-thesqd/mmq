@@ -50,7 +50,7 @@ export default defineConfig({
 ```tsx
 import { lazy, Suspense } from 'react'
 
-const MMQ = lazy(() => import('mmq/MMQDemo'))
+const MMQ = lazy(() => import('mmq/MMQ'))
 
 function App() {
   return (
@@ -88,7 +88,7 @@ function App() {
 ```tsx
 import { lazy, Suspense } from 'react'
 
-const MMQ = lazy(() => import('mmq/MMQDemo'))
+const MMQ = lazy(() => import('mmq/MMQ'))
 
 function App() {
   const accountNumber = parseInt(
@@ -249,15 +249,15 @@ Add type declarations for the remote module:
 
 ```typescript
 // src/types/mmq.d.ts
-declare module 'mmq/MMQDemo' {
+declare module 'mmq/MMQ' {
   import { ComponentType } from 'react'
 
   export interface MMQProps {
     accountNumber?: number
   }
 
-  const MMQDemo: ComponentType<MMQProps>
-  export default MMQDemo
+  const MMQ: ComponentType<MMQProps>
+  export default MMQ
 }
 ```
 
@@ -273,7 +273,7 @@ import { useEffect } from 'react'
 function App() {
   useEffect(() => {
     // Preload MMQ module
-    import('mmq/MMQDemo')
+    import('mmq/MMQ')
   }, [])
 
   // ... rest of component
@@ -289,7 +289,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 const MMQPage = lazy(() =>
   import('./pages/MMQPage').then(module => ({
     default: () => {
-      const MMQ = lazy(() => import('mmq/MMQDemo'))
+      const MMQ = lazy(() => import('mmq/MMQ'))
       return (
         <Suspense fallback={<div>Loading...</div>}>
           <MMQ accountNumber={2800} />

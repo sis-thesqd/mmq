@@ -51,7 +51,7 @@ export default function MMQWrapper({ accountNumber: propAccountNumber }: MMQWrap
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="max-w-md mx-auto p-6 bg-card border border-border rounded-lg">
           <h2 className="text-xl font-semibold mb-4 text-foreground">
-            MMQ Component Demo
+            MMQ Component
           </h2>
           <p className="text-muted-foreground mb-4">
             Please provide an account number as a prop or in the URL parameter.

@@ -68,7 +68,6 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000/demo?accountNumber=2800 to view the demo.
 
 ## Usage
 
@@ -168,10 +167,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
 npm run dev
 ```
 
-4. View the demo page:
-```bash
-# Navigate to http://localhost:3000/demo?accountNumber=12345
-```
 
 ## Building for Production
 
@@ -208,7 +203,6 @@ The MMQ component makes API calls directly to:
 
 - `app/` - Next.js app directory
   - `app/api/` - API routes (serverless functions)
-  - `app/demo/` - Demo page
   - `app/layout.tsx` - Root layout
   - `app/page.tsx` - Home page
 - `src/components/mmq/` - MMQ-specific components (layout, modals, task components)
@@ -228,8 +222,6 @@ The MMQ component makes API calls directly to:
 - Responsive design
 - TypeScript support
 - Fully customizable props
-
-## Demo Page
 
 A demo page is available at `/demo` that demonstrates how to use the MMQ component with different account numbers and configurations.
 
