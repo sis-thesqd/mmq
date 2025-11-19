@@ -331,14 +331,40 @@ export const TaskCard = memo(function TaskCard({
                   <span className="inline-flex items-center justify-center px-1.5 py-0.45 text-[12px] font-medium bg-primary/20 text-primary rounded">
                     {position}
                   </span>
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 relative">
                     <h3
                       ref={nameRef}
-                      className="font-medium truncate transition-colors duration-150 text-md text-foreground"
+                      className="font-medium truncate transition-colors duration-150 text-md text-foreground cursor-pointer"
                       style={{ maxWidth: '500px' }}
+                      onMouseEnter={(e) => {
+                        const element = e.currentTarget;
+                        // Check if text is actually truncated
+                        if (element.scrollWidth > element.clientWidth || task.name.length > (isSmallScreen ? 28 : 60)) {
+                          const rect = element.getBoundingClientRect();
+                          setNameTooltipPosition({
+                            top: rect.top - 8,
+                            left: rect.left + rect.width / 2,
+                          });
+                          setShowNameTooltip(true);
+                        }
+                      }}
+                      onMouseLeave={() => setShowNameTooltip(false)}
                     >
                       {truncateText(task.name, isSmallScreen)}
                     </h3>
+                    {showNameTooltip && nameTooltipPosition && (
+                      <div
+                        className="fixed z-50 px-3 py-2 text-sm bg-popover text-popover-foreground border border-border rounded-lg shadow-lg max-w-md"
+                        style={{
+                          top: `${nameTooltipPosition.top}px`,
+                          left: `${nameTooltipPosition.left}px`,
+                          transform: 'translate(-50%, -100%)',
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        {task.name}
+                      </div>
+                    )}
                     {showCountdownTimers &&
                       showTimer &&
                       (countdown || isRefreshing) && (
