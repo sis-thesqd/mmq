@@ -22,7 +22,7 @@ import { filterActiveTasks, filterHoldTasks } from '@/services/mmq/utils/taskUti
 import { TaskGroup } from './task/TaskGroup';
 import { TaskCard } from './task/TaskCard';
 import { TimerProvider } from './layout/TimerContext';
-import { Loading } from './layout/Loading';
+import { MMQSkeleton } from './layout/MMQSkeleton';
 import { SuccessToast } from './modals/SuccessToast';
 import { WarningToast } from './modals/WarningToast';
 import { MMQ_DEFAULTS } from '@/config/mmq.config';
@@ -321,7 +321,7 @@ export function MMQ({
     : null;
 
   if (loading) {
-    return <Loading />;
+    return <MMQSkeleton />;
   }
 
   if (error) {

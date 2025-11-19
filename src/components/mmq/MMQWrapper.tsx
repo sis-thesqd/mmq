@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { MMQ } from './MMQ'
+import { MMQSkeleton } from './layout/MMQSkeleton'
 import { loadMMQStyles } from '@/integration/loadCSS'
 
 interface MMQWrapperProps {
@@ -57,11 +58,7 @@ export default function MMQWrapper({
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
   if (!cssLoaded || !isReady) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    )
+    return <MMQSkeleton />
   }
 
   if (!accountNumber || isNaN(accountNumber)) {
