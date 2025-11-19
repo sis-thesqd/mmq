@@ -34,8 +34,9 @@ export default async function handler(
   }
 
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
+    // Always use production URL (not preview URLs)
+    const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : process.env.NEXT_PUBLIC_BASE_URL || 'https://mmq-modular.vercel.app';
 
     // In production, Next.js generates a build manifest
